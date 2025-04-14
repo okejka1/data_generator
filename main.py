@@ -1,5 +1,8 @@
 from faker import Faker
 
+from models import Patient
+
+
 # word = "python"
 #
 # # print(word[2:4])
@@ -27,3 +30,17 @@ from faker import Faker
 #     print(a)
 #     a, b=b, a+b
 #
+#
+def generate_patients(number):
+    patients = []
+    for i in number:
+        patients.append(Patient(
+
+        ))
+
+
+def write_sql_script():
+    with open("script.sql", "w") as f:
+        f.write("")
+
+write_sql_script()
