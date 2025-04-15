@@ -45,7 +45,7 @@ class PatientCase(Base):
     __tablename__ = 'patient_case'
 
     id = Column(Integer, primary_key=True)
-    patient_id = Column(Integer, ForeignKey("patient.id"))
+    patientid = Column(Integer, ForeignKey("patient.id"))
     start_time = Column(DateTime)
     end_time = Column(DateTime, nullable=True)
     in_progress = Column(Boolean)
@@ -57,7 +57,7 @@ class PatientCase(Base):
     appointments = relationship("Appointment", back_populates="patient_case")
 
     def __str__(self):
-        return (f'patient_id={self.patient.id} {self.start_time}, {self.end_time}, {self.in_progress}, {self.total_cost},'
+        return (f'patientid={self.patient.id} {self.start_time}, {self.end_time}, {self.in_progress}, {self.total_cost},'
                 f' {self.amount_paid}')
 
 

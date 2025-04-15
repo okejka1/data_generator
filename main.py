@@ -4,7 +4,6 @@ from faker import Faker
 import random
 from models import *
 import utils as ut
-
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
@@ -13,8 +12,15 @@ if len(sys.argv) < 3:
     sys.exit()
 
 fake = Faker("pl_PL")
+from urllib.parse import quote_plus
+import sys
 
-engine = create_engine(f'mysql+pymysql://{sys.argv[1]}:{sys.argv[2]}@localhost:3306/clinic_database', echo=True)
+username = sys.argv[1]
+password = quote_plus(sys.argv[2])  # Properly escape special chars like '@'
+
+engine = create_engine(f'mysql+pymysql://{username}:{password}@127.0.0.1:3306/clinic_database', echo=True)
+
+# engine = create_engine(f'mysql+pymysql://{sys.argv[1]}:@localhost:3306/clinic_database', echo=True)
 Session = sessionmaker(bind=engine)
 session = Session()
 
