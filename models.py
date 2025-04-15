@@ -35,10 +35,11 @@ class Patient(Base):
     documents = relationship("Document", back_populates="patient")
 
     def __str__(self):
-        return (f'id={self.id}, {self.first_name} {self.last_name}, {self.pesel}, {self.date_of_birth}, {self.address},'
+        return (f'{self.id}, {self.first_name} {self.last_name}, {self.pesel}, {self.date_of_birth}, {self.address},'
                 f' {self.email_address}, {self.phone_number}')
 
-
+    def to_sql(self):
+        return 'INSERT'
 
 class PatientCase(Base):
     __tablename__ = 'patient_case'
@@ -54,6 +55,10 @@ class PatientCase(Base):
     patient = relationship("Patient", back_populates="patient_cases")
     documents = relationship("Document", back_populates="patient_case")
     appointments = relationship("Appointment", back_populates="patient_case")
+
+    def __str__(self):
+        return (f'patient_id={self.patient.id} {self.start_time}, {self.end_time}, {self.in_progress}, {self.total_cost},'
+                f' {self.amount_paid}')
 
 
 class Appointment(Base):

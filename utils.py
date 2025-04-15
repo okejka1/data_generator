@@ -1,2 +1,2 @@
-def generate_mail(name, last_name):
-    return f'{name}.{last_name}@poczta.pl'
+def generate_mail(name: str, last_name: str):
+    return f'{name.lower()}.{last_name.lower()}@poczta.pl'
