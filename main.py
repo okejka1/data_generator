@@ -1,46 +1,44 @@
 from faker import Faker
-
+import random
 from models import Patient
+import utils as ut
+
+fake = Faker("pl_PL")
 
 
-# word = "python"
-#
-# # print(word[2:4])
-# print(word[4: ])
-# print(word[-2: ])
-# # print(word[4:0])
-# # print(word[:-2])
-# # print(word[:2])
-#
-# # Python strings cannot be changed — they are immutable.
-# # Therefore, assigning to an indexed position in the string results in an error:
-# new_word = word[:] + 'w'
-# print(new_word)
-# s = "qweq"
-# print(len(s))
-#
-# squares = [1,4,9,16,25]
-# squares.append(22)
-# squares[:] = []
-# print(squares)
-#
-#
-# a,b = 0,1
-# while a < 10:
-#     print(a)
-#     a, b=b, a+b
-#
-#
 def generate_patients(number):
     patients = []
-    for i in number:
-        patients.append(Patient(
+    for i in range(number):
+        gender = random.choice(['male', 'female'])
+        first_name = fake.first_name_male() if gender == 'male' else fake.first_name_female()
+        last_name = fake.last_name()
+        date_of_birth = fake.date_of_birth(minimum_age=0, maximum_age=100)
+        pesel = fake.pesel(date_of_birth, gender)
+        address = fake.address().replace('\n', ', ')
+        email_address = ut.generate_mail(first_name, last_name)
+        phone_number = fake.phone_number()
 
-        ))
+        patient = Patient(
+            id=i,
+            first_name=first_name,
+            last_name=last_name,
+            pesel=pesel,
+            gender=gender,
+            date_of_birth=date_of_birth,
+            address=address,
+            email_address=email_address,
+            phone_number=phone_number
+        )
+        print(patient)
+
+        patients.append(patient)
+    return patients
 
 
 def write_sql_script():
     with open("script.sql", "w") as f:
         f.write("")
 
-write_sql_script()
+
+# write_sql_script()
+generate_patients(5)

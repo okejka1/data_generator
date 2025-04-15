@@ -34,6 +34,11 @@ class Patient(Base):
     patient_cases = relationship("PatientCase", back_populates="patient")
     documents = relationship("Document", back_populates="patient")
 
+    def __str__(self):
+        return (f'id={self.id}, {self.first_name} {self.last_name}, {self.pesel}, {self.date_of_birth}, {self.address},'
+                f' {self.email_address}, {self.phone_number}')
+
+
 
 class PatientCase(Base):
     __tablename__ = 'patient_case'
