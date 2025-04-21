@@ -7,8 +7,7 @@ import utils as ut
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, time
-from models import DEPARTMENTS
-from models import LIST_OF_TABLES
+import pymysql
 
 # TODO: IMPROVE READABILITY OF THE CODE
 # TODO: ADJUST DELETION OF DATA RECORDS TO NOT THROW ERRORS ON DB CLEARANCE
@@ -33,6 +32,7 @@ session = Session()
 Base.metadata.create_all(engine)
 for table in LIST_OF_TABLES:
     session.execute(text(f"DELETE FROM {table};"))
+    session.execute(text(f"ALTER TABLE {table} AUTO_INCREMENT = 1;"))
 session.commit()
 
 # Work hours in each department are 8-18 everyday
@@ -47,8 +47,7 @@ def generate_department_responsiblity(range_days) -> List[DepartmentResponsibili
     work_start_time = time(8, 0)  # 8:00
     work_end_time = time(18, 0)  # 18:00
 
-    for i in range(len(department_list)):
-        dept_name = department_list[i % len(department_list)]
+    for dept_name in department_list:
         current_date = start_date
 
         for _ in range(range_days):
@@ -323,9 +322,9 @@ def write_sql_script(table_name, patients):
     f.close()
 
 patients = generate_patients(5)
-generate_patient_cases(patients)
-generate_department_responsiblity(30)
-generate_appointment_statuses()
+patient_cases = generate_patient_cases(patients)
+department_responsibilities = generate_department_responsiblity(30)
+statuses = generate_appointment_statuses()
 generate_document_types()
-
+generate_appointments(patient_cases, department_responsibilities, statuses)
 session.close()

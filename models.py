@@ -110,12 +110,12 @@ class Appointment(Base):
     __tablename__ = 'appointment'
 
     id = Column(Integer, primary_key=True)
-    patient_case_id = Column(Integer, ForeignKey("patient_case.id"))
-    department_responsibility_id = Column(Integer, ForeignKey("department_responsibility.id"))
+    patient_caseid = Column(Integer, ForeignKey("patient_case.id"))
+    department_responsibilityid = Column(Integer, ForeignKey("department_responsibility.id"))
     time_created = Column(DateTime)
     appointment_start_time = Column(DateTime)
     appointment_end_time = Column(DateTime, nullable=True)
-    appointment_status_id = Column(Integer, ForeignKey("appointment_status.id"))
+    appointment_statusid = Column(Integer, ForeignKey("appointment_status.id"))
 
     patient_case = relationship("PatientCase", back_populates="appointments")
     department_responsibility = relationship("DepartmentResponsibility", back_populates="appointments")
@@ -141,8 +141,8 @@ class AppointmentHistory(Base):
     __tablename__ = 'status_history'
 
     id = Column(Integer, primary_key=True)
-    appointment_id = Column(Integer, ForeignKey("appointment.id"))
-    appointment_status_id = Column(Integer, ForeignKey("appointment_status.id"))
+    appointmentid = Column(Integer, ForeignKey("appointment.id"))
+    appointment_statusid = Column(Integer, ForeignKey("appointment_status.id"))
     status_time = Column(DateTime)
 
     appointment = relationship("Appointment", back_populates="appointment_histories")
@@ -171,11 +171,11 @@ class Document(Base):
     document_url = Column(String(255))
     details = Column(String(1000), nullable=True)
 
-    patient_id = Column(Integer, ForeignKey("patient.id"), nullable=True)
-    patient_case_id = Column(Integer, ForeignKey("patient_case.id"), nullable=True)
-    department_responsibility_id = Column(Integer, ForeignKey("department_responsibility.id"), nullable=True)
-    appointment_id = Column(Integer, ForeignKey("appointment.id"), nullable=True)
-    document_type_id = Column(Integer, ForeignKey("document_type.id"), nullable=True)
+    patientid = Column(Integer, ForeignKey("patient.id"), nullable=True)
+    patient_caseid = Column(Integer, ForeignKey("patient_case.id"), nullable=True)
+    department_responsibilityid = Column(Integer, ForeignKey("department_responsibility.id"), nullable=True)
+    appointmentid = Column(Integer, ForeignKey("appointment.id"), nullable=True)
+    document_typeid = Column(Integer, ForeignKey("document_type.id"), nullable=True)
 
     patient = relationship("Patient", back_populates="documents")
     patient_case = relationship("PatientCase", back_populates="documents")
