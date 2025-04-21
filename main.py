@@ -136,7 +136,7 @@ def generate_patient_cases(patients, cases_per_patient=1):
     session.commit()
     return patient_cases
 
-def generate_appointment_statuses() ->List[AppointmentStatus]:
+def generate_appointment_statuses() -> List[AppointmentStatus]:
     statuses = []
     for status in APPOINTMENT_STATUSES:
         status = AppointmentStatus(
@@ -159,6 +159,150 @@ def generate_document_types() -> List[DocumentType]:
         document_types.append(document_type)
     session.commit()
     return document_types
+
+
+def generate_appointments(patient_cases, department_responsibilities, appointment_statuses):
+    appointments = []
+
+    # Group department responsibilities by department and date
+    dept_schedule = {}
+    for dept_resp in department_responsibilities:
+        date_key = dept_resp.time_from.date()
+        dept_key = dept_resp.department_name
+        if (dept_key, date_key) not in dept_schedule:
+            dept_schedule[(dept_key, date_key)] = []
+        dept_schedule[(dept_key, date_key)].append(dept_resp)
+
+    # For each department and day, create appointments
+    for (dept_name, date), dept_resps in dept_schedule.items():
+        if not dept_resps:
+            continue
+
+        dept_resp = dept_resps[0]
+
+        # Create fixed time slots from 8:00 to 18:00
+        time_slots = []
+        slot_duration = timedelta(minutes=60)
+
+        current_time = datetime.combine(date, time(8, 0))
+        end_time = datetime.combine(date, time(18, 0))
+
+        while current_time + slot_duration <= end_time:
+            time_slots.append(current_time)
+            current_time += slot_duration
+
+        # Get only active (not ended) cases for this day
+        available_cases = [
+            case for case in patient_cases
+            if case.start_time.date() <= date
+               and case.end_time is None  # Case must be active (not ended)
+               and case.in_progress  # Must be in progress
+        ]
+
+        if not available_cases:
+            continue
+
+        # Create appointments for each time slot
+        for slot_time in time_slots:
+            if not available_cases:
+                # Refresh available cases if we run out
+                available_cases = [
+                    case for case in patient_cases
+                    if case.start_time.date() <= date
+                       and case.end_time is None
+                       and case.in_progress
+                ]
+                if not available_cases:
+                    break
+
+            case = random.choice(available_cases)
+            available_cases.remove(case)
+
+            duration = timedelta(minutes=random.randint(30, 55))
+            appointment_start = slot_time
+            appointment_end = slot_time + duration
+
+            # Determine status based on current time
+            current_time = datetime.now()
+            if appointment_start > current_time:
+                status = next(s for s in appointment_statuses if s.status_name.lower() == "zaplanowany")
+            elif appointment_end > current_time:
+                status = next(s for s in appointment_statuses if s.status_name.lower() == "w trakcie")
+            else:
+                status = next(s for s in appointment_statuses if s.status_name.lower() == "zakończony")
+
+            time_created = min(
+                appointment_start - timedelta(days=random.randint(1, 7)),
+                case.start_time
+            )
+
+            appointment = Appointment(
+                patient_case_id=case.id,
+                department_responsibility_id=dept_resp.id,
+                time_created=time_created,
+                appointment_start_time=appointment_start,
+                appointment_end_time=appointment_end,
+                appointment_status_id=status.id
+            )
+
+            session.add(appointment)
+            appointments.append(appointment)
+
+    session.commit()
+
+    for appointment in appointments:
+        print(f"Appointment ID: {appointment.id}, "
+              f"Case ID: {appointment.patient_case_id}, "
+              f"Department: {appointment.department_responsibility.department_name}, "
+              f"Date: {appointment.appointment_start_time.date()}, "
+              f"Time: {appointment.appointment_start_time.time()} - {appointment.appointment_end_time.time()}")
+
+    return appointments
+
+#
+# def generate_appointment_history(appointments, appointment_statuses):
+#     histories = []
+#
+#     for appointment in appointments:
+#         planned_status = next(s for s in appointment_statuses if s.status_name == "zaplanowany")
+#         in_progress_status = next(s for s in appointment_statuses if s.status_name == "w trakcie")
+#         completed_status = next(s for s in appointment_statuses if s.status_name == "zakocznony")
+#
+#         history = AppointmentHistory(
+#             appointment_id=appointment.id,
+#             appointment_status_id=planned_status.id,
+#             status_time=appointment.time_created
+#         )
+#         session.add(history)
+#         histories.append(history)
+#
+#         current_time = datetime.now()
+#
+#         # Add "in progress" status if appointment has started
+#         if current_time >= appointment.appointment_start_time:
+#             history = AppointmentHistory(
+#                 appointment_id=appointment.id,
+#                 appointment_status_id=in_progress_status.id,
+#                 status_time=appointment.appointment_start_time
+#             )
+#             session.add(history)
+#             histories.append(history)
+#
+#             # Add "completed" status if appointment has ended
+#             if appointment.appointment_end_time and current_time >= appointment.appointment_end_time:
+#                 history = AppointmentHistory(
+#                     appointment_id=appointment.id,
+#                     appointment_status_id=completed_status.id,
+#                     status_time=appointment.appointment_end_time
+#                 )
+#                 session.add(history)
+#                 histories.append(history)
+#
+#     session.commit()
+#     for history in histories:
+#         print(f"History - Appointment ID: {history.appointment_id}, "
+#               f"Status ID: {history.appointment_status_id}, Time: {history.status_time}")
+#     return histories
 
 
 def write_sql_script(table_name, patients):

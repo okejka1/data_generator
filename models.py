@@ -31,7 +31,7 @@ DEPARTMENTS = [
     "Onkologia"
 ]
 
-APPOINTMENT_STATUSES = ["zaplanowany", "w trakcie", "zakocznony"]
+APPOINTMENT_STATUSES = ["Zaplanowany", "W trakcie", "Zakończony"]
 
 DOCUMENT_TYPES = [
     "Karta pacjenta",
@@ -147,6 +147,9 @@ class AppointmentHistory(Base):
 
     appointment = relationship("Appointment", back_populates="appointment_histories")
     appointment_status = relationship("AppointmentStatus", back_populates="appointment_histories")
+
+    def __str__(self):
+        return (f'{self.id}, {self.appointment_id}, {self.appointment_status_id}, {self.status_time}')
 
 
 class DocumentType(Base):
