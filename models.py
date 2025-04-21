@@ -5,19 +5,19 @@ from sqlalchemy.orm import relationship, declarative_base
 '''
 MVP of data generator:
 create data generator which generates data for the following tables:
-- department_responsibility
-- patient
-- patient_case
+- department_responsibility - DONE
+- patient - DONE
+- patient_case - DONE
 - appointment
-- appointment_status
+- appointment_status - DONE
 - appointment_history
-- document_type
+- document_type - DONE
 - document
 
 and output is sql script which can be executed on mysql database.
 Requirement for MVP is for database to be cleared before running data generator.
 
-Further steps would include adding records on already filed tables.
+Further steps would include adding records on already filled tables.
 
 '''
 
@@ -25,10 +25,25 @@ Further steps would include adding records on already filed tables.
 LIST_OF_TABLES = {"department_responsibility", "patient", "patient_case", "appointment", "appointment_status", "status_history", "document_type", "document"}
 Base = declarative_base()
 
-departments = [
+DEPARTMENTS = [
     "Kardiologia", "Neurologia", "Pediatria", "Ortopedia",
     "Dermatologia", "Chirurgia", "Ginekologia", "Urologia", "Endokrynologia",
     "Onkologia"
+]
+
+APPOINTMENT_STATUSES = ["zaplanowany", "w trakcie", "zakocznony"]
+
+DOCUMENT_TYPES = [
+    "Karta pacjenta",
+    "Wynik badania",
+    "Recepta",
+    "Skierowanie",
+    "Historia choroby",
+    "Zalecenia lekarskie",
+    "Zaświadczenie lekarskie",
+    "Zgoda na zabieg",
+    "Karta szczepień",
+    "Dokumentacja obrazowa"
 ]
 
 
@@ -117,6 +132,9 @@ class AppointmentStatus(Base):
 
     appointments = relationship("Appointment", back_populates="appointment_status")
     appointment_histories = relationship("AppointmentHistory", back_populates="appointment_status")
+
+    def __str__(self):
+        return (f'{self.id}, {self.status_name}')
 
 
 class AppointmentHistory(Base):

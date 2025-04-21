@@ -1,5 +1,4 @@
 import sys
-from datetime import timedelta
 from typing import List
 from faker import Faker
 import random
@@ -8,8 +7,11 @@ import utils as ut
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, time
-from models import departments
+from models import DEPARTMENTS
 from models import LIST_OF_TABLES
+
+# TODO: IMPROVE READABILITY OF THE CODE
+# TODO: ADJUST DELETION OF DATA RECORDS TO NOT THROW ERRORS ON DB CLEARANCE
 
 if len(sys.argv) < 3:
     print("provide DB credentials")
@@ -35,9 +37,9 @@ session.commit()
 
 # Work hours in each department are 8-18 everyday
 # Consider adding new table employee
-def generate_department_responsiblity(number_of_departments, range_days) -> List[DepartmentResponsibility]:
+def generate_department_responsiblity(range_days) -> List[DepartmentResponsibility]:
     department_responsibilities = []
-    department_list = departments
+    department_list = DEPARTMENTS
 
     now = datetime.now()
 
@@ -45,7 +47,7 @@ def generate_department_responsiblity(number_of_departments, range_days) -> List
     work_start_time = time(8, 0)  # 8:00
     work_end_time = time(18, 0)  # 18:00
 
-    for i in range(number_of_departments):
+    for i in range(len(department_list)):
         dept_name = department_list[i % len(department_list)]
         current_date = start_date
 
@@ -134,6 +136,30 @@ def generate_patient_cases(patients, cases_per_patient=1):
     session.commit()
     return patient_cases
 
+def generate_appointment_statuses() ->List[AppointmentStatus]:
+    statuses = []
+    for status in APPOINTMENT_STATUSES:
+        status = AppointmentStatus(
+            status_name=status,
+        )
+        print(status)
+        session.add(status)
+        statuses.append(status)
+    session.commit()
+    return statuses
+
+def generate_document_types() -> List[DocumentType]:
+    document_types = []
+    for _type_name in DOCUMENT_TYPES:
+        document_type = DocumentType(
+            type_name=_type_name
+        )
+        print(document_type)
+        session.add(document_type)
+        document_types.append(document_type)
+    session.commit()
+    return document_types
+
 
 def write_sql_script(table_name, patients):
     with open("script.sql", "w") as f:
@@ -154,6 +180,8 @@ def write_sql_script(table_name, patients):
 
 patients = generate_patients(5)
 generate_patient_cases(patients)
-generate_department_responsiblity(8, 30)
+generate_department_responsiblity(30)
+generate_appointment_statuses()
+generate_document_types()
 
 session.close()
