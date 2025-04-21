@@ -30,10 +30,13 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 Base.metadata.create_all(engine)
-for table in LIST_OF_TABLES:
-    session.execute(text(f"DELETE FROM {table};"))
-    session.execute(text(f"ALTER TABLE {table} AUTO_INCREMENT = 1;"))
-session.commit()
+def delete_data_from_tables():
+    session.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
+    for table in LIST_OF_TABLES:
+        session.execute(text(f"DELETE FROM {table};"))
+        session.execute(text(f"ALTER TABLE {table} AUTO_INCREMENT = 1;"))
+    session.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
+    session.commit()
 
 # Work hours in each department are 8-18 everyday
 # Consider adding new table employee
@@ -54,6 +57,7 @@ def generate_department_responsiblity(range_days) -> List[DepartmentResponsibili
             time_from = datetime.combine(current_date.date(), work_start_time)
             time_to = datetime.combine(current_date.date(), work_end_time)
 
+            # TODO: Consider limiting employee (e.g. csv with names and roles)
             gender = random.choice(['male', 'female'])
             first_name = fake.first_name_male() if gender == 'male' else fake.first_name_female()
             last_name = fake.last_name()
@@ -114,7 +118,7 @@ def generate_patient_cases(patients, cases_per_patient=1):
 
     for i, patient in enumerate(patients):
         for _ in range(cases_per_patient):
-            start = fake.date_time_between(start_date='-2y', end_date='now')
+            start = fake.date_time_between(start_date='-2y', end_date='-30d')
             duration_days = random.randint(1, 30)
             end = start + timedelta(days=duration_days) if random.random() > 0.3 else None
 
@@ -135,6 +139,7 @@ def generate_patient_cases(patients, cases_per_patient=1):
     session.commit()
     return patient_cases
 
+
 def generate_appointment_statuses() -> List[AppointmentStatus]:
     statuses = []
     for status in APPOINTMENT_STATUSES:
@@ -146,6 +151,7 @@ def generate_appointment_statuses() -> List[AppointmentStatus]:
         statuses.append(status)
     session.commit()
     return statuses
+
 
 def generate_document_types() -> List[DocumentType]:
     document_types = []
@@ -159,11 +165,14 @@ def generate_document_types() -> List[DocumentType]:
     session.commit()
     return document_types
 
-
+# TODO: fix - possible for one patient to have more than one appointment at the same time
 def generate_appointments(patient_cases, department_responsibilities, appointment_statuses):
     appointments = []
-
+    '''
+    1. Get     
+    '''
     # Group department responsibilities by department and date
+    # Dictionary with key (pair of department_name and date) and value -> list of Department_responsibilities
     dept_schedule = {}
     for dept_resp in department_responsibilities:
         date_key = dept_resp.time_from.date()
@@ -172,12 +181,15 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
             dept_schedule[(dept_key, date_key)] = []
         dept_schedule[(dept_key, date_key)].append(dept_resp)
 
+    # Track patient appointments to avoid overlaps
+    patient_appointments = {}  # Dictionary to track appointments per patient
+
     # For each department and day, create appointments
     for (dept_name, date), dept_resps in dept_schedule.items():
         if not dept_resps:
             continue
 
-        dept_resp = dept_resps[0]
+        dept_resp_id = dept_resps[0]
 
         # Create fixed time slots from 8:00 to 18:00
         time_slots = []
@@ -191,12 +203,14 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
             current_time += slot_duration
 
         # Get only active (not ended) cases for this day
-        available_cases = [
-            case for case in patient_cases
-            if case.start_time.date() <= date
-               and case.end_time is None  # Case must be active (not ended)
-               and case.in_progress  # Must be in progress
-        ]
+        available_cases = []
+        for case in patient_cases:
+            has_started = case.start_time.date() <= date
+            not_ended = case.end_time is None
+            is_active = case.in_progress
+
+            if has_started and not_ended and is_active:
+                available_cases.append(case)
 
         if not available_cases:
             continue
@@ -213,6 +227,26 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
                 ]
                 if not available_cases:
                     break
+
+            # Try finding a case without overlapping appointments
+            case = None
+            for potential_case in available_cases:
+                patient_id = potential_case.id
+
+                # Check if the patient already has an appointment overlapping this time slot
+                patient_existing_appointments = patient_appointments.get(patient_id, [])
+                overlap = any(
+                    (slot_time < app['end'] and slot_time + slot_duration > app['start'])
+                    for app in patient_existing_appointments
+                )
+
+                if not overlap:
+                    case = potential_case
+                    break
+
+            # If no case fits, skip this time slot
+            if not case:
+                continue
 
             case = random.choice(available_cases)
             available_cases.remove(case)
@@ -236,12 +270,12 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
             )
 
             appointment = Appointment(
-                patient_case_id=case.id,
-                department_responsibility_id=dept_resp.id,
+                patient_caseid=case.id,
+                in_departmentid=dept_resp_id.id,
                 time_created=time_created,
                 appointment_start_time=appointment_start,
                 appointment_end_time=appointment_end,
-                appointment_status_id=status.id
+                appointment_statusid=status.id
             )
 
             session.add(appointment)
@@ -249,12 +283,12 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
 
     session.commit()
 
-    for appointment in appointments:
-        print(f"Appointment ID: {appointment.id}, "
-              f"Case ID: {appointment.patient_case_id}, "
-              f"Department: {appointment.department_responsibility.department_name}, "
-              f"Date: {appointment.appointment_start_time.date()}, "
-              f"Time: {appointment.appointment_start_time.time()} - {appointment.appointment_end_time.time()}")
+    # for appointment in appointments:
+    #     print(f"Appointment ID: {appointment.id}, "
+    #           f"Case ID: {appointment.patient_caseid}, "
+    #           f"Department: {appointment.in_departmentid.department_name}, "
+    #           f"Date: {appointment.appointment_start_time.date()}, "
+    #           f"Time: {appointment.appointment_start_time.time()} - {appointment.appointment_end_time.time()}")
 
     return appointments
 
@@ -321,10 +355,19 @@ def write_sql_script(table_name, patients):
             f.write(sql)
     f.close()
 
+print("LOG | Deleting data")
+delete_data_from_tables()
+print("LOG | Generating patients")
 patients = generate_patients(5)
+print("LOG | Generating patient cases")
 patient_cases = generate_patient_cases(patients)
+print("LOG | Generating department responsibilities")
 department_responsibilities = generate_department_responsiblity(30)
+print("LOG | Generating appointment statuses")
 statuses = generate_appointment_statuses()
+print("LOG | Generating document types")
 generate_document_types()
+print("LOG | Generating appointments")
 generate_appointments(patient_cases, department_responsibilities, statuses)
+print("LOG | Closing session")
 session.close()

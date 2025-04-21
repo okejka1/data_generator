@@ -111,7 +111,7 @@ class Appointment(Base):
 
     id = Column(Integer, primary_key=True)
     patient_caseid = Column(Integer, ForeignKey("patient_case.id"))
-    department_responsibilityid = Column(Integer, ForeignKey("department_responsibility.id"))
+    in_departmentid = Column(Integer, ForeignKey("department_responsibility.id"))
     time_created = Column(DateTime)
     appointment_start_time = Column(DateTime)
     appointment_end_time = Column(DateTime, nullable=True)
