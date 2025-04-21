@@ -1,11 +1,15 @@
 import sys
 from datetime import timedelta
+from typing import List
 from faker import Faker
 import random
 from models import *
 import utils as ut
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from datetime import datetime, timedelta, time
+from models import departments
+from models import LIST_OF_TABLES
 
 if len(sys.argv) < 3:
     print("provide DB credentials")
@@ -24,12 +28,55 @@ engine = create_engine(f'mysql+pymysql://{username}:{password}@127.0.0.1:3306/cl
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Create all tables
 Base.metadata.create_all(engine)
-session.execute(text("DELETE FROM appointment;"))
-session.execute(text("DELETE FROM patient_case;"))
-session.execute(text("DELETE FROM patient;"))
+for table in LIST_OF_TABLES:
+    session.execute(text(f"DELETE FROM {table};"))
 session.commit()
+
+# Work hours in each department are 8-18 everyday
+# Consider adding new table employee
+def generate_department_responsiblity(number_of_departments, range_days) -> List[DepartmentResponsibility]:
+    department_responsibilities = []
+    department_list = departments
+
+    now = datetime.now()
+
+    start_date = now - (timedelta(days=range_days)/2)
+    work_start_time = time(8, 0)  # 8:00
+    work_end_time = time(18, 0)  # 18:00
+
+    for i in range(number_of_departments):
+        dept_name = department_list[i % len(department_list)]
+        current_date = start_date
+
+        for _ in range(range_days):
+            time_from = datetime.combine(current_date.date(), work_start_time)
+            time_to = datetime.combine(current_date.date(), work_end_time)
+
+            gender = random.choice(['male', 'female'])
+            first_name = fake.first_name_male() if gender == 'male' else fake.first_name_female()
+            last_name = fake.last_name()
+            employee_full_name = f"{first_name} {last_name}"
+            is_active = (now >= time_from and now <= time_to and
+                         now.date() == current_date.date())
+
+            dept_responsibility = DepartmentResponsibility(
+                employee_full_name=employee_full_name,
+                department_name=dept_name,
+                time_from=time_from,
+                time_to=time_to,
+                is_active=is_active
+            )
+            session.add(dept_responsibility)
+            department_responsibilities.append(dept_responsibility)
+
+            current_date += timedelta(days=1)
+    session.commit()
+    for de in department_responsibilities:
+        print(de)
+    return department_responsibilities
+
+
 def generate_patients(number):
     patients = []
     for _ in range(number):
@@ -54,7 +101,6 @@ def generate_patients(number):
         )
 
         session.add(patient)
-
         patients.append(patient)
     session.commit()
     for patient in patients:
@@ -89,12 +135,25 @@ def generate_patient_cases(patients, cases_per_patient=1):
     return patient_cases
 
 
-def write_sql_script():
+def write_sql_script(table_name, patients):
     with open("script.sql", "w") as f:
-        f.write("")
+        # First, write the statement to reset auto_increment
+        f.write(f"ALTER TABLE {table_name} AUTO_INCREMENT = 1;\n")
 
 
-# write_sql_script()
-generate_patient_cases(generate_patients(5))
+        for i, patient in enumerate(patients, start=1):
+            date_str = patient.date_of_birth.strftime('%Y-%m-%d')
+            sql = f"""INSERT INTO {table_name} 
+                    (id, first_name, last_name, pesel, gender, date_of_birth, address, email_address, phone_number) 
+                    VALUES 
+                    ({i}, '{patient.first_name}', '{patient.last_name}', '{patient.pesel}', 
+                    '{patient.gender}', '{date_str}', '{patient.address}', 
+                    '{patient.email_address}', '{patient.phone_number}');\n"""
+            f.write(sql)
+    f.close()
+
+patients = generate_patients(5)
+generate_patient_cases(patients)
+generate_department_responsiblity(8, 30)
 
 session.close()

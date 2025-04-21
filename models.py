@@ -1,7 +1,35 @@
 from sqlalchemy import Column, Integer, String, Date, DECIMAL, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, declarative_base
 
+
+'''
+MVP of data generator:
+create data generator which generates data for the following tables:
+- department_responsibility
+- patient
+- patient_case
+- appointment
+- appointment_status
+- appointment_history
+- document_type
+- document
+
+and output is sql script which can be executed on mysql database.
+Requirement for MVP is for database to be cleared before running data generator.
+
+Further steps would include adding records on already filed tables.
+
+'''
+
+
+LIST_OF_TABLES = {"department_responsibility", "patient", "patient_case", "appointment", "appointment_status", "status_history", "document_type", "document"}
 Base = declarative_base()
+
+departments = [
+    "Kardiologia", "Neurologia", "Pediatria", "Ortopedia",
+    "Dermatologia", "Chirurgia", "Ginekologia", "Urologia", "Endokrynologia",
+    "Onkologia"
+]
 
 
 class DepartmentResponsibility(Base):
@@ -17,6 +45,8 @@ class DepartmentResponsibility(Base):
     appointments = relationship("Appointment", back_populates="department_responsibility")
     documents = relationship("Document", back_populates="department_responsibility")
 
+    def __str__(self):
+        return (f'{self.id}, {self.employee_full_name} {self.department_name}, {self.time_from}, {self.time_to}, {self.is_active}')
 
 class Patient(Base):
     __tablename__ = 'patient'
@@ -29,7 +59,7 @@ class Patient(Base):
     date_of_birth = Column(Date)
     address = Column(String(255))
     email_address = Column(String(64), nullable=True)
-    phone_number = Column(String, nullable=True)
+    phone_number = Column(String(20), nullable=True)
 
     patient_cases = relationship("PatientCase", back_populates="patient")
     documents = relationship("Document", back_populates="patient")
@@ -115,7 +145,7 @@ class Document(Base):
 
     id = Column(Integer, primary_key=True)
     document_internal_number = Column(Integer, unique=True)
-    document_name = Column(String)
+    document_name = Column(String(255))
     time_created = Column(DateTime)
     document_url = Column(String(255))
     details = Column(String(1000), nullable=True)
