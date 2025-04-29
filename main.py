@@ -118,9 +118,9 @@ def generate_patient_cases(patients, cases_per_patient=1):
 
     for i, patient in enumerate(patients):
         for _ in range(cases_per_patient):
-            start = fake.date_time_between(start_date='-2y', end_date='-30d')
+            start = fake.date_time_between(start_date='-2y', end_date='now')
             duration_days = random.randint(1, 30)
-            end = start + timedelta(days=duration_days) if random.random() > 0.3 else None
+            end = start + timedelta(days=duration_days) if random.random() > 0.7 else None
 
             total_cost = round(random.uniform(100, 10000), 2)
             amount_paid = round(total_cost * random.uniform(0.5, 1.0), 2)
@@ -165,132 +165,102 @@ def generate_document_types() -> List[DocumentType]:
     session.commit()
     return document_types
 
-# TODO: fix - possible for one patient to have more than one appointment at the same time
-def generate_appointments(patient_cases, department_responsibilities, appointment_statuses):
+# def get_active_patient_case(patients_cases_list, current_date) -> List[PatientCase]:
+#     active_patient_cases = []
+#     for patient_case in patients_cases_list:
+#         if patient_case.in_progress and patient_case.start_time.date() <= current_date and patient_case.end_time is None :
+#             active_patient_cases.append(patient_case)
+#     return active_patient_cases
+
+'''
+STEPS TO GENERATE APPOINTMENTS:
+1. Get the list of all patients' ids from a patient_cases list in order to do not crate overlapping appointments.
+2. Get the list of all the department responsibilities (known days with doctors' shifts in each department).
+3. Get patient_cases for now only active ones (means these which does not have end_time). From patient_cases w
+4. For each department and each patient case create appointments for each day in the range of 8:00 - 18:00.
+5. For each appointment, determine the status based on the current time.
+
+'''
+def generate_appointments(patient_cases, department_responsibilities, appointment_statuses, number_of_appointments):
     appointments = []
-    '''
-    1. Get     
-    '''
-    # Group department responsibilities by department and date
-    # Dictionary with key (pair of department_name and date) and value -> list of Department_responsibilities
-    dept_schedule = {}
-    for dept_resp in department_responsibilities:
-        date_key = dept_resp.time_from.date()
-        dept_key = dept_resp.department_name
-        if (dept_key, date_key) not in dept_schedule:
-            dept_schedule[(dept_key, date_key)] = []
-        dept_schedule[(dept_key, date_key)].append(dept_resp)
+    appointments_by_patient = {case.patient.id: [] for case in patient_cases}  # Track appointments for each patient
 
-    # Track patient appointments to avoid overlaps
-    patient_appointments = {}  # Dictionary to track appointments per patient
+    # Prepare a list of valid department responsibilities and time slots
+    valid_responsibilities = [resp for resp in department_responsibilities if resp.is_active]
+    time_slots = [time(8, 0) + timedelta(minutes=60 * i) for i in range(10)]  # Hours between 8:00 and 18:00
 
-    # For each department and day, create appointments
-    for (dept_name, date), dept_resps in dept_schedule.items():
-        if not dept_resps:
-            continue
+    # Generate the desired number of appointments
+    for _ in range(number_of_appointments):
+        # Randomly pick a department responsibility (random department and day)
+        dept_resp = random.choice(valid_responsibilities)
+        date = dept_resp.time_from.date()
 
-        dept_resp_id = dept_resps[0]
-
-        # Create fixed time slots from 8:00 to 18:00
-        time_slots = []
-        slot_duration = timedelta(minutes=60)
-
-        current_time = datetime.combine(date, time(8, 0))
-        end_time = datetime.combine(date, time(18, 0))
-
-        while current_time + slot_duration <= end_time:
-            time_slots.append(current_time)
-            current_time += slot_duration
-
-        # Get only active (not ended) cases for this day
-        available_cases = []
-        for case in patient_cases:
-            has_started = case.start_time.date() <= date
-            not_ended = case.end_time is None
-            is_active = case.in_progress
-
-            if has_started and not_ended and is_active:
-                available_cases.append(case)
-
+        # Randomly select a patient case
+        available_cases = [
+            case for case in patient_cases
+            if case.in_progress and case.start_time.date() <= date and case.end_time is None
+        ]
         if not available_cases:
-            continue
+            continue  # Skip if no valid cases are available
 
-        # Create appointments for each time slot
-        for slot_time in time_slots:
-            if not available_cases:
-                # Refresh available cases if we run out
-                available_cases = [
-                    case for case in patient_cases
-                    if case.start_time.date() <= date
-                       and case.end_time is None
-                       and case.in_progress
-                ]
-                if not available_cases:
-                    break
+        case = random.choice(available_cases)
+        patient_id = case.patient.id
 
-            # Try finding a case without overlapping appointments
-            case = None
-            for potential_case in available_cases:
-                patient_id = potential_case.id
+        # Randomly choose a time slot
+        random_slot = random.choice(time_slots)
+        appointment_start = datetime.combine(date, random_slot)
+        duration = timedelta(minutes=random.randint(30, 55))
+        appointment_end = appointment_start + duration
 
-                # Check if the patient already has an appointment overlapping this time slot
-                patient_existing_appointments = patient_appointments.get(patient_id, [])
-                overlap = any(
-                    (slot_time < app['end'] and slot_time + slot_duration > app['start'])
-                    for app in patient_existing_appointments
-                )
+        # Ensure no overlapping appointments for this patient
+        if any(
+            appointment_start < end and appointment_end > start  # Overlapping condition
+            for start, end in appointments_by_patient[patient_id]
+        ):
+            continue  # Skip if time slot is already occupied for this patient
 
-                if not overlap:
-                    case = potential_case
-                    break
+        # Determine appointment status based on current time
+        current_time = datetime.now()
+        if appointment_start > current_time:
+            status = next(s for s in appointment_statuses if s.status_name.lower() == "zaplanowany")
+        elif appointment_end > current_time:
+            status = next(s for s in appointment_statuses if s.status_name.lower() == "w trakcie")
+        else:
+            status = next(s for s in appointment_statuses if s.status_name.lower() == "zakończony")
 
-            # If no case fits, skip this time slot
-            if not case:
-                continue
+        # Set creation time for the appointment
+        time_created = min(
+            appointment_start - timedelta(days=random.randint(1, 7)), case.start_time
+        )
 
-            case = random.choice(available_cases)
-            available_cases.remove(case)
+        # Create the appointment
+        appointment = Appointment(
+            patient_caseid=case.id,
+            in_departmentid=dept_resp.id,
+            time_created=time_created,
+            appointment_start_time=appointment_start,
+            appointment_end_time=appointment_end,
+            appointment_statusid=status.id,
+        )
 
-            duration = timedelta(minutes=random.randint(30, 55))
-            appointment_start = slot_time
-            appointment_end = slot_time + duration
+        # Save the appointment
+        session.add(appointment)
+        appointments.append(appointment)
+        appointments_by_patient[patient_id].append((appointment_start, appointment_end))  # Track this patient's appointments
 
-            # Determine status based on current time
-            current_time = datetime.now()
-            if appointment_start > current_time:
-                status = next(s for s in appointment_statuses if s.status_name.lower() == "zaplanowany")
-            elif appointment_end > current_time:
-                status = next(s for s in appointment_statuses if s.status_name.lower() == "w trakcie")
-            else:
-                status = next(s for s in appointment_statuses if s.status_name.lower() == "zakończony")
-
-            time_created = min(
-                appointment_start - timedelta(days=random.randint(1, 7)),
-                case.start_time
-            )
-
-            appointment = Appointment(
-                patient_caseid=case.id,
-                in_departmentid=dept_resp_id.id,
-                time_created=time_created,
-                appointment_start_time=appointment_start,
-                appointment_end_time=appointment_end,
-                appointment_statusid=status.id
-            )
-
-            session.add(appointment)
-            appointments.append(appointment)
-
+    # Commit the appointments to the database
     session.commit()
 
-    # for appointment in appointments:
-    #     print(f"Appointment ID: {appointment.id}, "
-    #           f"Case ID: {appointment.patient_caseid}, "
-    #           f"Department: {appointment.in_departmentid.department_name}, "
-    #           f"Date: {appointment.appointment_start_time.date()}, "
-    #           f"Time: {appointment.appointment_start_time.time()} - {appointment.appointment_end_time.time()}")
+    # Output for verification
+    for appointment in appointments:
+        print(f"Appointment ID: {appointment.id}, "
+              f"Case ID: {appointment.patient_caseid}, "
+              f"Department: {appointment.department_responsibility.department_name}, "
+              f"Date: {appointment.appointment_start_time.date()}, "
+              f"Time: {appointment.appointment_start_time.time()} - {appointment.appointment_end_time.time()}")
 
     return appointments
+
 
 #
 # def generate_appointment_history(appointments, appointment_statuses):
