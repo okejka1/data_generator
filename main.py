@@ -185,9 +185,11 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
     appointments = []
     appointments_by_patient = {case.patient.id: [] for case in patient_cases}  # Track appointments for each patient
 
-    # Prepare a list of valid department responsibilities and time slots
-    valid_responsibilities = [resp for resp in department_responsibilities if resp.is_active]
-    time_slots = [time(8, 0) + timedelta(minutes=60 * i) for i in range(10)]  # Hours between 8:00 and 18:00
+    # Prepare a list of valid department responsibilities
+    valid_responsibilities = [resp for resp in department_responsibilities]
+
+    # Generate time slots between 8:00 AM and 6:00 PM (10 total slots, hourly)
+    time_slots = [datetime.combine(datetime.today(), time(8, 0)) + timedelta(hours=i) for i in range(10)]
 
     # Generate the desired number of appointments
     for _ in range(number_of_appointments):
@@ -195,7 +197,7 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
         dept_resp = random.choice(valid_responsibilities)
         date = dept_resp.time_from.date()
 
-        # Randomly select a patient case
+        # List available cases
         available_cases = [
             case for case in patient_cases
             if case.in_progress and case.start_time.date() <= date and case.end_time is None
@@ -207,8 +209,8 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
         patient_id = case.patient.id
 
         # Randomly choose a time slot
-        random_slot = random.choice(time_slots)
-        appointment_start = datetime.combine(date, random_slot)
+        random_slot = random.choice(time_slots)  # `random_slot` is already a datetime object
+        appointment_start = random_slot
         duration = timedelta(minutes=random.randint(30, 55))
         appointment_end = appointment_start + duration
 
@@ -217,7 +219,7 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
             appointment_start < end and appointment_end > start  # Overlapping condition
             for start, end in appointments_by_patient[patient_id]
         ):
-            continue  # Skip if time slot is already occupied for this patient
+            continue  # Skip if time slot is already occupied
 
         # Determine appointment status based on current time
         current_time = datetime.now()
@@ -251,7 +253,7 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
     # Commit the appointments to the database
     session.commit()
 
-    # Output for verification
+    # Output
     for appointment in appointments:
         print(f"Appointment ID: {appointment.id}, "
               f"Case ID: {appointment.patient_caseid}, "
@@ -338,6 +340,6 @@ statuses = generate_appointment_statuses()
 print("LOG | Generating document types")
 generate_document_types()
 print("LOG | Generating appointments")
-generate_appointments(patient_cases, department_responsibilities, statuses)
+generate_appointments(patient_cases, department_responsibilities, statuses, 2)
 print("LOG | Closing session")
 session.close()
