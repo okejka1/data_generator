@@ -262,48 +262,65 @@ def generate_appointment_histories(appointments):
 
     for appointment in appointments:
         time_created = appointment.time_created
-        if appointment.appointment_status == "To do":
+
+        # Retrieve the appointment status
+        status_id = appointment.appointment_statusid
+
+        # Debugging: Print appointment and status to see processing
+        print(f"Processing Appointment ID: {appointment.id}, Status ID: {status_id}")
+
+        # Create history for "To do"
+        if status_id == 1:  # Assuming 1 is the ID for "To do"
             history = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=0,
+                appointment_statusid=1,
                 status_time=time_created
             )
             appointment_histories.append(history)
-        elif appointment.appointment_status == "In progress":
-            history_zaplanowany = AppointmentHistory(
+
+        # Create history for "In progress"
+        elif status_id == 2:  # Assuming 2 is the ID for "In progress"
+            history_to_do = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=0,
+                appointment_statusid=1,  # "To do"
                 status_time=time_created
             )
-            history_w_trakcie = AppointmentHistory(
+            history_in_progress = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=1,
+                appointment_statusid=2,  # "In progress"
                 status_time=appointment.appointment_start_time
             )
-            appointment_histories.extend([history_zaplanowany, history_w_trakcie])
-        elif appointment.appointment_status == "Done":
-            history_zaplanowany = AppointmentHistory(
+            appointment_histories.extend([history_to_do, history_in_progress])
+
+        # Create history for "Done"
+        elif status_id == 3:  # Assuming 3 is the ID for "Done"
+            history_to_do = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=0,  
+                appointment_statusid=1,  # "To do"
                 status_time=time_created
             )
-            history_w_trakcie = AppointmentHistory(
+            history_in_progress = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=1, 
+                appointment_statusid=2,  # "In progress"
                 status_time=appointment.appointment_start_time
             )
-            history_zakonczony = AppointmentHistory(
+            history_done = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=2,  
+                appointment_statusid=3,  # "Done"
                 status_time=appointment.appointment_end_time
             )
-            appointment_histories.extend([history_zaplanowany, history_w_trakcie, history_zakonczony])
+            appointment_histories.extend([history_to_do, history_in_progress, history_done])
 
-    # Add all generated histories to the session and commit them.
+    # Commit all generated histories to the database
     session.add_all(appointment_histories)
     session.commit()
 
+    # Debugging: Print the histories created
+    for history in appointment_histories:
+        print(f"Created History: Appointment ID {history.appointmentid}, Status ID {history.appointment_statusid}, Time {history.status_time}")
+
     return appointment_histories
+
 
 def write_sql_script(table_name, patients):
     with open("script.sql", "w") as f:
