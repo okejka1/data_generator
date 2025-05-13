@@ -177,7 +177,7 @@ STEPS TO GENERATE APPOINTMENTS:
 def generate_appointments(patient_cases, department_responsibilities, appointment_statuses, number_of_appointments):
     appointments = []
 
-    appointments_by_patient = {case.patient.id: [] for case in patient_cases}  # Track appointments for each patient
+    appointments_by_patient = {case.patient.id: [] for case in patient_cases }  # Track appointments for each patient
 
     # Prepare a list of valid department responsibilities
     valid_responsibilities = [resp for resp in department_responsibilities]
@@ -262,15 +262,14 @@ def generate_appointment_histories(appointments):
 
     for appointment in appointments:
         time_created = appointment.time_created
-
-        if appointment.status.status_name == "To do":
+        if appointment.appointment_status == "To do":
             history = AppointmentHistory(
                 appointmentid=appointment.id,
                 appointment_statusid=0,
                 status_time=time_created
             )
             appointment_histories.append(history)
-        elif appointment.status.status_name == "In progress":
+        elif appointment.appointment_status == "In progress":
             history_zaplanowany = AppointmentHistory(
                 appointmentid=appointment.id,
                 appointment_statusid=0,
@@ -282,59 +281,29 @@ def generate_appointment_histories(appointments):
                 status_time=appointment.appointment_start_time
             )
             appointment_histories.extend([history_zaplanowany, history_w_trakcie])
-        elif appointment.status.status_name == "Done":
-            # Create three records: "Zaplanowany", "W trakcie", and "Zakończony".
+        elif appointment.appointment_status == "Done":
             history_zaplanowany = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=0,  # Assuming 0 is for "Zaplanowany"
+                appointment_statusid=0,  
                 status_time=time_created
             )
             history_w_trakcie = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=1,  # Assuming 1 is for "W trakcie"
+                appointment_statusid=1, 
                 status_time=appointment.appointment_start_time
             )
             history_zakonczony = AppointmentHistory(
                 appointmentid=appointment.id,
-                appointment_statusid=2,  # Assuming 2 is for "Zakończony"
+                appointment_statusid=2,  
                 status_time=appointment.appointment_end_time
             )
             appointment_histories.extend([history_zaplanowany, history_w_trakcie, history_zakonczony])
-
-        else:
-            print(f"ERROR: UNKNOWN STATUS {appointment.status.status_name}")
-            sys.exit()
 
     # Add all generated histories to the session and commit them.
     session.add_all(appointment_histories)
     session.commit()
 
     return appointment_histories
-
-    # for appointment in appointments:
-    #     status_change_time = appointment.time_created
-    #     existing_statuses = []
-    #
-    #     for _ in range(history_per_appointment):
-    #         # Ensure a new status
-    #         status = random.choice([status for status in appointment_statuses if status.id not in existing_statuses])
-    #         existing_statuses.append(status.id)
-    #
-    #         status_change_time += timedelta(minutes=random.randint(10, 120))  # Randomly set next status time
-    #
-    #         history = AppointmentHistory(
-    #             appointmentid=appointment.id,
-    #             appointment_statusid=status.id,
-    #             status_time=status_change_time
-    #         )
-    #         session.add(history)
-    #         print(f'History: {history.appointmentid}, Status: {status.status_name}, Time: {history.status_time}')
-    #         appointment_histories.append(history)
-
-    session.commit()
-    return appointment_histories
-
-
 
 def write_sql_script(table_name, patients):
     with open("script.sql", "w") as f:
