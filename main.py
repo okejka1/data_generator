@@ -263,14 +263,10 @@ def generate_appointment_histories(appointments):
     for appointment in appointments:
         time_created = appointment.time_created
 
-        # Retrieve the appointment status
         status_id = appointment.appointment_statusid
 
-        # Debugging: Print appointment and status to see processing
-        print(f"Processing Appointment ID: {appointment.id}, Status ID: {status_id}")
-
-        # Create history for "To do"
-        if status_id == 1:  # Assuming 1 is the ID for "To do"
+        # TO DO status:
+        if status_id == 1:
             history = AppointmentHistory(
                 appointmentid=appointment.id,
                 appointment_statusid=1,
@@ -278,8 +274,8 @@ def generate_appointment_histories(appointments):
             )
             appointment_histories.append(history)
 
-        # Create history for "In progress"
-        elif status_id == 2:  # Assuming 2 is the ID for "In progress"
+        # In progress status:
+        elif status_id == 2:
             history_to_do = AppointmentHistory(
                 appointmentid=appointment.id,
                 appointment_statusid=1,  # "To do"
@@ -292,8 +288,8 @@ def generate_appointment_histories(appointments):
             )
             appointment_histories.extend([history_to_do, history_in_progress])
 
-        # Create history for "Done"
-        elif status_id == 3:  # Assuming 3 is the ID for "Done"
+        # Done status:
+        elif status_id == 3:
             history_to_do = AppointmentHistory(
                 appointmentid=appointment.id,
                 appointment_statusid=1,  # "To do"
@@ -311,11 +307,9 @@ def generate_appointment_histories(appointments):
             )
             appointment_histories.extend([history_to_do, history_in_progress, history_done])
 
-    # Commit all generated histories to the database
     session.add_all(appointment_histories)
     session.commit()
 
-    # Debugging: Print the histories created
     for history in appointment_histories:
         print(f"Created History: Appointment ID {history.appointmentid}, Status ID {history.appointment_statusid}, Time {history.status_time}")
 
