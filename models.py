@@ -31,7 +31,7 @@ DEPARTMENTS = [
     "Onkologia"
 ]
 
-APPOINTMENT_STATUSES = ["Zaplanowany", "W trakcie", "Zakończony"]
+APPOINTMENT_STATUSES = ["To do", "In progress", "Done"]
 
 DOCUMENT_TYPES = [
     "Karta pacjenta",

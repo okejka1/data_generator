@@ -38,8 +38,8 @@ def delete_data_from_tables():
     session.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
     session.commit()
 
-# Work hours in each department are 8-18 everyday
-# Consider adding new table employee
+# Work hours in each department are 8-18 every day
+# Consider adding a new table employee
 def generate_department_responsiblity(range_days) -> List[DepartmentResponsibility]:
     department_responsibilities = []
     department_list = DEPARTMENTS
@@ -165,13 +165,6 @@ def generate_document_types() -> List[DocumentType]:
     session.commit()
     return document_types
 
-# def get_active_patient_case(patients_cases_list, current_date) -> List[PatientCase]:
-#     active_patient_cases = []
-#     for patient_case in patients_cases_list:
-#         if patient_case.in_progress and patient_case.start_time.date() <= current_date and patient_case.end_time is None :
-#             active_patient_cases.append(patient_case)
-#     return active_patient_cases
-
 '''
 STEPS TO GENERATE APPOINTMENTS:
 1. Get the list of all patients' ids from a patient_cases list in order to do not crate overlapping appointments.
@@ -183,6 +176,7 @@ STEPS TO GENERATE APPOINTMENTS:
 '''
 def generate_appointments(patient_cases, department_responsibilities, appointment_statuses, number_of_appointments):
     appointments = []
+
     appointments_by_patient = {case.patient.id: [] for case in patient_cases}  # Track appointments for each patient
 
     # Prepare a list of valid department responsibilities
@@ -209,7 +203,7 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
         patient_id = case.patient.id
 
         # Randomly choose a time slot
-        random_slot = random.choice(time_slots)  # `random_slot` is already a datetime object
+        random_slot = random.choice(time_slots)
         appointment_start = random_slot
         duration = timedelta(minutes=random.randint(30, 55))
         appointment_end = appointment_start + duration
@@ -224,11 +218,11 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
         # Determine appointment status based on current time
         current_time = datetime.now()
         if appointment_start > current_time:
-            status = next(s for s in appointment_statuses if s.status_name.lower() == "zaplanowany")
+            status = next(s for s in appointment_statuses if s.status_name == "To do")
         elif appointment_end > current_time:
-            status = next(s for s in appointment_statuses if s.status_name.lower() == "w trakcie")
+            status = next(s for s in appointment_statuses if s.status_name == "In progress")
         else:
-            status = next(s for s in appointment_statuses if s.status_name.lower() == "zakończony")
+            status = next(s for s in appointment_statuses if s.status_name == "Done")
 
         # Set creation time for the appointment
         time_created = min(
@@ -263,51 +257,83 @@ def generate_appointments(patient_cases, department_responsibilities, appointmen
 
     return appointments
 
+def generate_appointment_histories(appointments):
+    appointment_histories = []
 
-#
-# def generate_appointment_history(appointments, appointment_statuses):
-#     histories = []
-#
-#     for appointment in appointments:
-#         planned_status = next(s for s in appointment_statuses if s.status_name == "zaplanowany")
-#         in_progress_status = next(s for s in appointment_statuses if s.status_name == "w trakcie")
-#         completed_status = next(s for s in appointment_statuses if s.status_name == "zakocznony")
-#
-#         history = AppointmentHistory(
-#             appointment_id=appointment.id,
-#             appointment_status_id=planned_status.id,
-#             status_time=appointment.time_created
-#         )
-#         session.add(history)
-#         histories.append(history)
-#
-#         current_time = datetime.now()
-#
-#         # Add "in progress" status if appointment has started
-#         if current_time >= appointment.appointment_start_time:
-#             history = AppointmentHistory(
-#                 appointment_id=appointment.id,
-#                 appointment_status_id=in_progress_status.id,
-#                 status_time=appointment.appointment_start_time
-#             )
-#             session.add(history)
-#             histories.append(history)
-#
-#             # Add "completed" status if appointment has ended
-#             if appointment.appointment_end_time and current_time >= appointment.appointment_end_time:
-#                 history = AppointmentHistory(
-#                     appointment_id=appointment.id,
-#                     appointment_status_id=completed_status.id,
-#                     status_time=appointment.appointment_end_time
-#                 )
-#                 session.add(history)
-#                 histories.append(history)
-#
-#     session.commit()
-#     for history in histories:
-#         print(f"History - Appointment ID: {history.appointment_id}, "
-#               f"Status ID: {history.appointment_status_id}, Time: {history.status_time}")
-#     return histories
+    for appointment in appointments:
+        time_created = appointment.time_created
+
+        if appointment.status.status_name == "To do":
+            history = AppointmentHistory(
+                appointmentid=appointment.id,
+                appointment_statusid=0,
+                status_time=time_created
+            )
+            appointment_histories.append(history)
+        elif appointment.status.status_name == "In progress":
+            history_zaplanowany = AppointmentHistory(
+                appointmentid=appointment.id,
+                appointment_statusid=0,
+                status_time=time_created
+            )
+            history_w_trakcie = AppointmentHistory(
+                appointmentid=appointment.id,
+                appointment_statusid=1,
+                status_time=appointment.appointment_start_time
+            )
+            appointment_histories.extend([history_zaplanowany, history_w_trakcie])
+        elif appointment.status.status_name == "Done":
+            # Create three records: "Zaplanowany", "W trakcie", and "Zakończony".
+            history_zaplanowany = AppointmentHistory(
+                appointmentid=appointment.id,
+                appointment_statusid=0,  # Assuming 0 is for "Zaplanowany"
+                status_time=time_created
+            )
+            history_w_trakcie = AppointmentHistory(
+                appointmentid=appointment.id,
+                appointment_statusid=1,  # Assuming 1 is for "W trakcie"
+                status_time=appointment.appointment_start_time
+            )
+            history_zakonczony = AppointmentHistory(
+                appointmentid=appointment.id,
+                appointment_statusid=2,  # Assuming 2 is for "Zakończony"
+                status_time=appointment.appointment_end_time
+            )
+            appointment_histories.extend([history_zaplanowany, history_w_trakcie, history_zakonczony])
+
+        else:
+            print(f"ERROR: UNKNOWN STATUS {appointment.status.status_name}")
+            sys.exit()
+
+    # Add all generated histories to the session and commit them.
+    session.add_all(appointment_histories)
+    session.commit()
+
+    return appointment_histories
+
+    # for appointment in appointments:
+    #     status_change_time = appointment.time_created
+    #     existing_statuses = []
+    #
+    #     for _ in range(history_per_appointment):
+    #         # Ensure a new status
+    #         status = random.choice([status for status in appointment_statuses if status.id not in existing_statuses])
+    #         existing_statuses.append(status.id)
+    #
+    #         status_change_time += timedelta(minutes=random.randint(10, 120))  # Randomly set next status time
+    #
+    #         history = AppointmentHistory(
+    #             appointmentid=appointment.id,
+    #             appointment_statusid=status.id,
+    #             status_time=status_change_time
+    #         )
+    #         session.add(history)
+    #         print(f'History: {history.appointmentid}, Status: {status.status_name}, Time: {history.status_time}')
+    #         appointment_histories.append(history)
+
+    session.commit()
+    return appointment_histories
+
 
 
 def write_sql_script(table_name, patients):
@@ -330,7 +356,7 @@ def write_sql_script(table_name, patients):
 print("LOG | Deleting data")
 delete_data_from_tables()
 print("LOG | Generating patients")
-patients = generate_patients(5)
+patients = generate_patients(10)
 print("LOG | Generating patient cases")
 patient_cases = generate_patient_cases(patients)
 print("LOG | Generating department responsibilities")
@@ -340,6 +366,8 @@ statuses = generate_appointment_statuses()
 print("LOG | Generating document types")
 generate_document_types()
 print("LOG | Generating appointments")
-generate_appointments(patient_cases, department_responsibilities, statuses, 2)
+appointments = generate_appointments(patient_cases, department_responsibilities, statuses, 10)
+print("LOG | Generating appointment histories")
+generate_appointment_histories(appointments)
 print("LOG | Closing session")
 session.close()
