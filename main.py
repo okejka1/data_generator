@@ -2,6 +2,9 @@ import sys
 from typing import List
 from faker import Faker
 import random
+
+import models
+import utils
 from models import *
 import utils as ut
 from sqlalchemy import create_engine, text
@@ -315,6 +318,43 @@ def generate_appointment_histories(appointments):
 
     return appointment_histories
 
+def generate_documents(appointments):
+    docs = []
+    for appointment in appointments:
+        docs.append(generate_document_by_appointment(appointment))
+    session.add_all(docs)
+    session.commit()
+    return docs
+
+# def generate_documents_by_patient_case(patient_cases, document_type, num_documents_per_case=1):
+#     documents = []
+#     for case in patient_cases:
+#         for _ in range(num_documents_per_case):
+#
+#     for doc in documents:
+#         print(f"Document Internal Number: {doc.document_internal_number}, "
+#               f"Name: {doc.document_name}, Type: {doc.document_type.type_name}, URL: {doc.document_url}")
+#
+#     return documents
+
+def generate_document_by_appointment(appointment):
+    doc_type_id = random.randint(0, len(models.DOCUMENT_TYPES) - 1)
+    if(random.random() > 0.5):
+        description = fake.paragraph(nb_sentences=2)
+    else:
+        description = ""
+    doc = Document(
+        appointmentid=appointment.id,
+        document_typeid=doc_type_id,
+        document_internal=str(uuid.uuid4()),  # Generate a unique UUID
+        document_name=utils.generate_document_name(models.DOCUMENT_TYPES[doc_type_id]),
+        document_url=f"https://www.example.com/documents/{uuid.uuid4()}.pdf",
+        time_created=datetime.now(),
+        details=description
+    )
+    session.add(doc)
+    return doc
+
 
 def write_sql_script(table_name, patients):
     with open("script.sql", "w") as f:
@@ -349,5 +389,7 @@ print("LOG | Generating appointments")
 appointments = generate_appointments(patient_cases, department_responsibilities, statuses, 10)
 print("LOG | Generating appointment histories")
 generate_appointment_histories(appointments)
+print("LOG | Generating documents")
+generate_documents(appointments)
 print("LOG | Closing session")
 session.close()

@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Date, DECIMAL, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, declarative_base
+import uuid
 
 
 '''
@@ -165,7 +166,7 @@ class Document(Base):
     __tablename__ = 'document'
 
     id = Column(Integer, primary_key=True)
-    document_internal_number = Column(Integer, unique=True)
+    document_internal= Column(String(36), unique=True)
     document_name = Column(String(255))
     time_created = Column(DateTime)
     document_url = Column(String(255))
@@ -173,7 +174,7 @@ class Document(Base):
 
     patientid = Column(Integer, ForeignKey("patient.id"), nullable=True)
     patient_caseid = Column(Integer, ForeignKey("patient_case.id"), nullable=True)
-    department_responsibilityid = Column(Integer, ForeignKey("department_responsibility.id"), nullable=True)
+    in_departmentid = Column(Integer, ForeignKey("department_responsibility.id"), nullable=True)
     appointmentid = Column(Integer, ForeignKey("appointment.id"), nullable=True)
     document_typeid = Column(Integer, ForeignKey("document_type.id"), nullable=True)
 
