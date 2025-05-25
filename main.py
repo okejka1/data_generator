@@ -338,7 +338,7 @@ def generate_documents(appointments):
 #     return documents
 
 def generate_document_by_appointment(appointment):
-    doc_type_id = random.randint(0, len(models.DOCUMENT_TYPES) - 1)
+    doc_type_id = random.randint(1, len(models.DOCUMENT_TYPES))
     if(random.random() > 0.5):
         description = fake.paragraph(nb_sentences=2)
     else:
