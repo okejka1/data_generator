@@ -338,16 +338,24 @@ def generate_documents(appointments):
 #     return documents
 
 def generate_document_by_appointment(appointment):
-    doc_type_id = random.randint(1, len(models.DOCUMENT_TYPES))
-    if(random.random() > 0.5):
-        description = fake.paragraph(nb_sentences=2)
-    else:
-        description = ""
+    # Dynamically fetch valid IDs for document_type from the database
+    document_type_ids = [doc_type.id for doc_type in session.query(DocumentType).all()]
+    
+    if not document_type_ids:
+        raise ValueError("No document types found in the database!")
+
+    # Pick a random ID from the valid document type IDs
+    doc_type_id = random.choice(document_type_ids)
+
+    # Optionally generate a description
+    description = fake.paragraph(nb_sentences=2) if random.random() > 0.5 else ""
+
+    # Generate the document
     doc = Document(
         appointmentid=appointment.id,
-        document_typeid=doc_type_id,
-        document_internal=str(uuid.uuid4()),  # Generate a unique UUID
-        document_name=utils.generate_document_name(models.DOCUMENT_TYPES[doc_type_id]),
+        document_typeid=doc_type_id,  # Use valid database ID
+        document_internal=str(uuid.uuid4()),  # Unique UUID
+        document_name=utils.generate_document_name(session.query(DocumentType).get(doc_type_id).type_name),
         document_url=f"https://www.example.com/documents/{uuid.uuid4()}.pdf",
         time_created=datetime.now(),
         details=description
