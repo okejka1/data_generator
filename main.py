@@ -353,6 +353,7 @@ def generate_document_by_appointment(appointment):
         details=description
     )
     session.add(doc)
+    session.commit()
     return doc
 
 
