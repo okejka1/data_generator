@@ -1,0 +1,174 @@
+{
+  "tables": [
+    {
+      "name": "department_responsibility",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "employee_full_name", "type": "String", "length": 255},
+        {"name": "department_name", "type": "String", "length": 255},
+        {"name": "time_from", "type": "DateTime"},
+        {"name": "time_to", "type": "DateTime", "nullable": true},
+        {"name": "is_active", "type": "Boolean"}
+      ],
+      "relationships": [
+        {"name": "appointments", "target": "Appointment", "type": "one_to_many", "back_populates": "department_responsibility"},
+        {"name": "documents", "target": "Document", "type": "one_to_many", "back_populates": "department_responsibility"}
+      ]
+    },
+    {
+      "name": "patient",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "first_name", "type": "String", "length": 64},
+        {"name": "last_name", "type": "String", "length": 64},
+        {"name": "pesel", "type": "String", "length": 11, "unique": true},
+        {"name": "gender", "type": "String", "length": 64},
+        {"name": "date_of_birth", "type": "Date"},
+        {"name": "address", "type": "String", "length": 255},
+        {"name": "email_address", "type": "String", "length": 64, "nullable": true},
+        {"name": "phone_number", "type": "String", "length": 20, "nullable": true}
+      ],
+      "relationships": [
+        {"name": "patient_cases", "target": "PatientCase", "type": "one_to_many", "back_populates": "patient"},
+        {"name": "documents", "target": "Document", "type": "one_to_many", "back_populates": "patient"}
+      ]
+    },
+    {
+      "name": "patient_case",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "patientid", "type": "Integer", "foreign_key": "patient.id"},
+        {"name": "start_time", "type": "DateTime"},
+        {"name": "end_time", "type": "DateTime", "nullable": true},
+        {"name": "in_progress", "type": "Boolean"},
+        {"name": "total_cost", "type": "DECIMAL", "precision": 10, "scale": 2, "nullable": true},
+        {"name": "amount_paid", "type": "DECIMAL", "precision": 10, "scale": 2, "nullable": true}
+      ],
+      "relationships": [
+        {"name": "patient", "target": "Patient", "type": "many_to_one", "back_populates": "patient_cases"},
+        {"name": "documents", "target": "Document", "type": "one_to_many", "back_populates": "patient_case"},
+        {"name": "appointments", "target": "Appointment", "type": "one_to_many", "back_populates": "patient_case"}
+      ],
+      "methods": [
+        {
+          "name": "__str__",
+          "body": "return (f'patientid={self.patient.id} {self.start_time}, {self.end_time}, {self.in_progress}, {self.total_cost}, {self.amount_paid}')"
+        }
+      ]
+    },
+    {
+      "name": "appointment_status",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "status_name", "type": "String", "length": 64, "unique": true}
+      ],
+      "relationships": [
+        {"name": "appointments", "target": "Appointment", "type": "one_to_many", "back_populates": "appointment_status"},
+        {"name": "appointment_histories", "target": "AppointmentHistory", "type": "one_to_many", "back_populates": "appointment_status"}
+      ],
+
+    },
+    {
+      "name": "appointment",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "patient_caseid", "type": "Integer", "foreign_key": "patient_case.id"},
+        {"name": "in_departmentid", "type": "Integer", "foreign_key": "department_responsibility.id"},
+        {"name": "time_created", "type": "DateTime"},
+        {"name": "appointment_start_time", "type": "DateTime"},
+        {"name": "appointment_end_time", "type": "DateTime", "nullable": true},
+        {"name": "appointment_statusid", "type": "Integer", "foreign_key": "appointment_status.id"}
+      ],
+      "relationships": [
+        {"name": "patient_case", "target": "PatientCase", "type": "many_to_one", "back_populates": "appointments"},
+        {"name": "department_responsibility", "target": "DepartmentResponsibility", "type": "many_to_one", "back_populates": "appointments"},
+        {"name": "appointment_status", "target": "AppointmentStatus", "type": "many_to_one", "back_populates": "appointments"},
+        {"name": "documents", "target": "Document", "type": "one_to_many", "back_populates": "appointment"},
+        {"name": "appointment_histories", "target": "AppointmentHistory", "type": "one_to_many", "back_populates": "appointment"}
+      ]
+    },
+    {
+      "name": "status_history",
+      "class_name": "AppointmentHistory",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "appointmentid", "type": "Integer", "foreign_key": "appointment.id"},
+        {"name": "appointment_statusid", "type": "Integer", "foreign_key": "appointment_status.id"},
+        {"name": "status_time", "type": "DateTime"}
+      ],
+      "relationships": [
+        {"name": "appointment", "target": "Appointment", "type": "many_to_one", "back_populates": "appointment_histories"},
+        {"name": "appointment_status", "target": "AppointmentStatus", "type": "many_to_one", "back_populates": "appointment_histories"}
+      ],
+      "methods": [
+        {
+          "name": "__str__",
+          "body": "return (f'{self.id}, {self.appointment_id}, {self.appointment_status_id}, {self.status_time}')"
+        }
+      ]
+    },
+    {
+      "name": "document_type",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "type_name", "type": "String", "length": 64, "unique": true}
+      ],
+      "relationships": [
+        {"name": "documents", "target": "Document", "type": "one_to_many", "back_populates": "document_type"}
+      ]
+    },
+    {
+      "name": "document",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "document_internal", "type": "String", "length": 36, "unique": true},
+        {"name": "document_name", "type": "String", "length": 255},
+        {"name": "time_created", "type": "DateTime"},
+        {"name": "document_url", "type": "String", "length": 255},
+        {"name": "details", "type": "String", "length": 1000, "nullable": true},
+        {"name": "patientid", "type": "Integer", "foreign_key": "patient.id", "nullable": true},
+        {"name": "patient_caseid", "type": "Integer", "foreign_key": "patient_case.id", "nullable": true},
+        {"name": "in_departmentid", "type": "Integer", "foreign_key": "department_responsibility.id", "nullable": true},
+        {"name": "appointmentid", "type": "Integer", "foreign_key": "appointment.id", "nullable": true},
+        {"name": "document_typeid", "type": "Integer", "foreign_key": "document_type.id", "nullable": true}
+      ],
+      "relationships": [
+        {"name": "patient", "target": "Patient", "type": "many_to_one", "back_populates": "documents"},
+        {"name": "patient_case", "target": "PatientCase", "type": "many_to_one", "back_populates": "documents"},
+        {"name": "department_responsibility", "target": "DepartmentResponsibility", "type": "many_to_one", "back_populates": "documents"},
+        {"name": "appointment", "target": "Appointment", "type": "many_to_one", "back_populates": "documents"},
+        {"name": "document_type", "target": "DocumentType", "type": "many_to_one", "back_populates": "documents"}
+      ]
+    }
+  ],
+  "constants": {
+    "LIST_OF_TABLES": [
+      "department_responsibility",
+      "patient",
+      "patient_case",
+      "appointment",
+      "appointment_status",
+      "status_history",
+      "document_type",
+      "document"
+    ],
+    "DEPARTMENTS": [
+      "Kardiologia", "Neurologia", "Pediatria", "Ortopedia",
+      "Dermatologia", "Chirurgia", "Ginekologia", "Urologia", "Endokrynologia",
+      "Onkologia"
+    ],
+    "APPOINTMENT_STATUSES": ["To do", "In progress", "Done"],
+    "DOCUMENT_TYPES": [
+      "Karta pacjenta",
+      "Wynik badania",
+      "Recepta",
+      "Skierowanie",
+      "Historia choroby",
+      "Zalecenia lekarskie",
+      "Zaświadczenie lekarskie",
+      "Zgoda na zabieg",
+      "Karta szczepień",
+      "Dokumentacja obrazowa"
+    ]
+  }
+}
