@@ -1,0 +1,46 @@
+{
+  "tables": [
+    {
+      "name": "patient",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "first_name", "type": "String", "length": 64},
+        {"name": "last_name", "type": "String", "length": 64},
+        {"name": "pesel", "type": "String", "length": 11},
+        {"name": "gender", "type": "String", "length": 255},
+        {"name": "date_of_birth", "type": "Date"},
+        {"name": "email_address", "type": "String", "length": 255, "nullable": true},
+        {"name": "phone_number", "type": "String", "length": 20, "nullable": true, "unique": true},
+        {"name": "address", "type": "String", "length": 255}
+      ],
+      "relationships": [
+        {
+          "name": "patient_cases",
+          "target": "patient_case",
+          "type": "one_to_many",
+          "back_populates": "patient"
+        }
+      ]
+    },
+    {
+      "name": "patient_case",
+      "columns": [
+        {"name": "id", "type": "Integer", "primary_key": true},
+        {"name": "patient_id", "type": "Integer", "foreign_key": "patient.id"},
+        {"name": "start_time", "type": "DateTime"},
+        {"name": "end_time", "type": "DateTime", "nullable": true},
+        {"name": "in_progress", "type": "Boolean"},
+        {"name": "total_cost", "type": "DECIMAL", "precision": 10, "scale": 2, "nullable": true },
+        {"name": "amount_paid", "type": "DECIMAL", "precision": 10, "scale": 2, "nullable": true }
+      ],
+      "relationships": [
+        {
+          "name": "patient",
+          "target": "patient",
+          "type": "many_to_one",
+          "back_populates": "patient_cases"
+        }
+      ]
+    }
+  ]
+}

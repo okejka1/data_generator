@@ -1,15 +1,17 @@
 import sys
 from typing import List
+from urllib.parse import quote_plus
+
 from faker import Faker
 import random
 
-import models
 import utils
 from models import *
 import utils as ut
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, time
+from config import *
 import pymysql
 
 # TODO: IMPROVE READABILITY OF THE CODE
@@ -20,24 +22,17 @@ if len(sys.argv) < 3:
     sys.exit()
 
 fake = Faker("pl_PL")
-from urllib.parse import quote_plus
-import sys
-
-username = sys.argv[1]
-password = quote_plus(sys.argv[2])  # Properly escape special chars like '@'
-
-engine = create_engine(f'mysql+pymysql://{username}:{password}@127.0.0.1:3306/clinic_database', echo=True)
+engine = get_engine(sys.argv[1], quote_plus(sys.argv[2]), "clinic_database")
 
 # engine = create_engine(f'mysql+pymysql://{sys.argv[1]}:@localhost:3306/clinic_database', echo=True)
-Session = sessionmaker(bind=engine)
-session = Session()
-
-Base.metadata.create_all(engine)
-def delete_data_from_tables():
+def delete_data_from_tables(withDrop):
     session.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
     for table in LIST_OF_TABLES:
         session.execute(text(f"DELETE FROM {table};"))
         session.execute(text(f"ALTER TABLE {table} AUTO_INCREMENT = 1;"))
+        if(withDrop):
+            session.execute(text(f"DROP TABLE {table};"))
+
     session.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
     session.commit()
 
@@ -365,25 +360,30 @@ def generate_document_by_appointment(appointment):
     return doc
 
 
-def write_sql_script(table_name, patients):
-    with open("script.sql", "w") as f:
-        # First, write the statement to reset auto_increment
-        f.write(f"ALTER TABLE {table_name} AUTO_INCREMENT = 1;\n")
+# def write_sql_script(table_name, patients):
+#     with open("script.sql", "w") as f:
+#         # First, write the statement to reset auto_increment
+#         f.write(f"ALTER TABLE {table_name} AUTO_INCREMENT = 1;\n")
+#
+#
+#         for i, patient in enumerate(patients, start=1):
+#             date_str = patient.date_of_birth.strftime('%Y-%m-%d')
+#             sql = f"""INSERT INTO {table_name}
+#                     (id, first_name, last_name, pesel, gender, date_of_birth, address, email_address, phone_number)
+#                     VALUES
+#                     ({i}, '{patient.first_name}', '{patient.last_name}', '{patient.pesel}',
+#                     '{patient.gender}', '{date_str}', '{patient.address}',
+#                     '{patient.email_address}', '{patient.phone_number}');\n"""
+#             f.write(sql)
+#     f.close()
+
+Session = sessionmaker(bind=engine)
+session = Session()
+delete_data_from_tables(True)
+Base.metadata.create_all(engine)
 
 
-        for i, patient in enumerate(patients, start=1):
-            date_str = patient.date_of_birth.strftime('%Y-%m-%d')
-            sql = f"""INSERT INTO {table_name} 
-                    (id, first_name, last_name, pesel, gender, date_of_birth, address, email_address, phone_number) 
-                    VALUES 
-                    ({i}, '{patient.first_name}', '{patient.last_name}', '{patient.pesel}', 
-                    '{patient.gender}', '{date_str}', '{patient.address}', 
-                    '{patient.email_address}', '{patient.phone_number}');\n"""
-            f.write(sql)
-    f.close()
 
-print("LOG | Deleting data")
-delete_data_from_tables()
 print("LOG | Generating patients")
 patients = generate_patients(100)
 print("LOG | Generating patient cases")
