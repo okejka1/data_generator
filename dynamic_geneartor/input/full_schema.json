@@ -1,0 +1,217 @@
+{
+  "tables": [
+    {
+      "name": "department_responsibility",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "employee_full_name", "type": "String", "length": 255 },
+        { "name": "department_name", "type": "String", "length": 255 },
+        { "name": "time_from", "type": "DateTime" },
+        { "name": "time_to", "type": "DateTime", "nullable": true },
+        { "name": "is_active", "type": "Boolean" }
+      ],
+      "relationships": [
+        {
+          "name": "appointments",
+          "target": "appointment",
+          "type": "one_to_many",
+          "back_populates": "department_responsibility"
+        },
+        {
+          "name": "documents",
+          "target": "document",
+          "type": "one_to_many",
+          "back_populates": "department_responsibility"
+        }
+      ]
+    },
+    {
+      "name": "patient",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "first_name", "type": "String", "length": 64 },
+        { "name": "last_name", "type": "String", "length": 64 },
+        { "name": "pesel", "type": "String", "length": 11, "unique": true },
+        { "name": "gender", "type": "String", "length": 64 },
+        { "name": "date_of_birth", "type": "Date" },
+        { "name": "address", "type": "String", "length": 255 },
+        { "name": "email_address", "type": "String", "length": 64, "nullable": true },
+        { "name": "phone_number", "type": "String", "length": 20, "nullable": true }
+      ],
+      "relationships": [
+        {
+          "name": "patient_cases",
+          "target": "patient_case",
+          "type": "one_to_many",
+          "back_populates": "patient"
+        },
+        {
+          "name": "documents",
+          "target": "document",
+          "type": "one_to_many",
+          "back_populates": "patient"
+        }
+      ]
+    },
+    {
+      "name": "patient_case",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "patientid", "type": "Integer", "foreign_key": "patient.id" },
+        { "name": "start_time", "type": "DateTime" },
+        { "name": "end_time", "type": "DateTime", "nullable": true },
+        { "name": "in_progress", "type": "Boolean" },
+        { "name": "total_cost", "type": "DECIMAL", "precision": 10, "scale": 2, "nullable": true },
+        { "name": "amount_paid", "type": "DECIMAL", "precision": 10, "scale": 2, "nullable": true }
+      ],
+      "relationships": [
+        {
+          "name": "patient",
+          "target": "patient",
+          "type": "many_to_one",
+          "back_populates": "patient_cases"
+        },
+        {
+          "name": "appointments",
+          "target": "appointment",
+          "type": "one_to_many",
+          "back_populates": "patient_case"
+        },
+        {
+          "name": "documents",
+          "target": "document",
+          "type": "one_to_many",
+          "back_populates": "patient_case"
+        }
+      ]
+    },
+    {
+      "name": "appointment",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "patient_caseid", "type": "Integer", "foreign_key": "patient_case.id" },
+        { "name": "in_departmentid", "type": "Integer", "foreign_key": "department_responsibility.id" },
+        { "name": "time_created", "type": "DateTime" },
+        { "name": "appointment_start_time", "type": "DateTime" },
+        { "name": "appointment_end_time", "type": "DateTime", "nullable": true },
+        { "name": "appointment_statusid", "type": "Integer", "foreign_key": "appointment_status.id" }
+      ],
+      "relationships": [
+        {
+          "name": "patient_case",
+          "target": "patient_case",
+          "type": "many_to_one",
+          "back_populates": "appointments"
+        },
+        {
+          "name": "department_responsibility",
+          "target": "department_responsibility",
+          "type": "many_to_one",
+          "back_populates": "appointments"
+        },
+        {
+          "name": "appointment_status",
+          "target": "appointment_status",
+          "type": "many_to_one",
+          "back_populates": "appointments"
+        },
+        {
+          "name": "documents",
+          "target": "document",
+          "type": "one_to_many",
+          "back_populates": "appointment"
+        },
+        {
+          "name": "appointment_histories",
+          "target": "status_history",
+          "type": "one_to_many",
+          "back_populates": "appointment"
+        }
+      ]
+    },
+    {
+      "name": "appointment_status",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "status_name", "type": "String", "length": 64, "unique": true }
+      ],
+      "relationships": [
+        {
+          "name": "appointments",
+          "target": "appointment",
+          "type": "one_to_many",
+          "back_populates": "appointment_status"
+        },
+        {
+          "name": "appointment_histories",
+          "target": "status_history",
+          "type": "one_to_many",
+          "back_populates": "appointment_status"
+        }
+      ]
+    },
+    {
+      "name": "document_type",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "type_name", "type": "String", "length": 64, "unique": true }
+      ],
+      "relationships": [
+        {
+          "name": "documents",
+          "target": "document",
+          "type": "one_to_many",
+          "back_populates": "document_type"
+        }
+      ]
+    },
+    {
+      "name": "document",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "document_internal", "type": "String", "length": 36, "unique": true },
+        { "name": "document_name", "type": "String", "length": 255 },
+        { "name": "time_created", "type": "DateTime" },
+        { "name": "document_url", "type": "String", "length": 255 },
+        { "name": "details", "type": "String", "length": 1000, "nullable": true },
+        { "name": "patientid", "type": "Integer", "foreign_key": "patient.id", "nullable": true },
+        { "name": "patient_caseid", "type": "Integer", "foreign_key": "patient_case.id", "nullable": true },
+        { "name": "in_departmentid", "type": "Integer", "foreign_key": "department_responsibility.id", "nullable": true },
+        { "name": "appointmentid", "type": "Integer", "foreign_key": "appointment.id", "nullable": true },
+        { "name": "document_typeid", "type": "Integer", "foreign_key": "document_type.id", "nullable": true }
+      ],
+      "relationships": [
+        {
+          "name": "patient",
+          "target": "patient",
+          "type": "many_to_one",
+          "back_populates": "documents"
+        },
+        {
+          "name": "patient_case",
+          "target": "patient_case",
+          "type": "many_to_one",
+          "back_populates": "documents"
+        },
+        {
+          "name": "department_responsibility",
+          "target": "department_responsibility",
+          "type": "many_to_one",
+          "back_populates": "documents"
+        },
+        {
+          "name": "appointment",
+          "target": "appointment",
+          "type": "many_to_one",
+          "back_populates": "documents"
+        },
+        {
+          "name": "document_type",
+          "target": "document_type",
+          "type": "many_to_one",
+          "back_populates": "documents"
+        }
+      ]
+    }
+  ]
+}

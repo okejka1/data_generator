@@ -13,10 +13,10 @@ def render_column(col):
         line += ", primary_key=True"
     if col.get('unique'):
         line += ", unique=True"
-    if col.get('nullable') is not None:
-        line += f", nullable={col['nullable']}"
     if col.get('foreign_key'):
         line += f", ForeignKey('{col['foreign_key']}')"
+    if col.get('nullable') is not None:
+        line += f", nullable={col['nullable']}"
     line += ")"
     return line
 
@@ -43,7 +43,7 @@ def generate_python_code(schema):
         s.append("")
     return '\n'.join(s)
 
-with open('input/schema.json') as f:
+with open('input/full_schema.json') as f:
     schema = json.load(f)
 
 code = generate_python_code(schema)

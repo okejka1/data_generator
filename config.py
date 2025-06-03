@@ -1,4 +1,3 @@
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -9,3 +8,8 @@ def get_engine(username, password, database_name):
 def get_session(engine):
     Session = sessionmaker(bind=engine)
     return Session()
+
+def get_faker():
+    from faker import Faker
+    fake = Faker("pl_PL")
+    return fake
