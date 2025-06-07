@@ -7,8 +7,8 @@ def render_column(col):
         line = f"{col['name']} = Column(DECIMAL({precision}, {scale})"
     else:
         line = f"{col['name']} = Column({col['type']}"
-        if col.get('length'):
-            line += f"({col['length']})"
+    if col.get('length'):
+        line += f"({col['length']})"
     if col.get('primary_key'):
         line += ", primary_key=True"
     if col.get('unique'):
@@ -39,7 +39,10 @@ def generate_python_code(schema):
 
         if 'relationships' in table:
             for rel in table['relationships']:
-                s.append(f"    {rel['name']} = relationship('{rel['target']}', back_populates='{rel['back_populates']}')")
+                target_class = ''.join([word.capitalize() for word in rel['target'].split('_')])
+                back_populates = rel['back_populates']
+                rel_name = rel['name']
+                s.append(f"    {rel_name} = relationship('{target_class}', back_populates='{back_populates}')")
         s.append("")
     return '\n'.join(s)
 

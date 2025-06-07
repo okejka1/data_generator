@@ -11,18 +11,8 @@
         { "name": "is_active", "type": "Boolean" }
       ],
       "relationships": [
-        {
-          "name": "appointments",
-          "target": "appointment",
-          "type": "one_to_many",
-          "back_populates": "department_responsibility"
-        },
-        {
-          "name": "documents",
-          "target": "document",
-          "type": "one_to_many",
-          "back_populates": "department_responsibility"
-        }
+        { "name": "appointments", "target": "appointment", "type": "one_to_many", "back_populates": "department_responsibility" },
+        { "name": "documents", "target": "document", "type": "one_to_many", "back_populates": "department_responsibility" }
       ]
     },
     {
@@ -39,18 +29,8 @@
         { "name": "phone_number", "type": "String", "length": 20, "nullable": true }
       ],
       "relationships": [
-        {
-          "name": "patient_cases",
-          "target": "patient_case",
-          "type": "one_to_many",
-          "back_populates": "patient"
-        },
-        {
-          "name": "documents",
-          "target": "document",
-          "type": "one_to_many",
-          "back_populates": "patient"
-        }
+        { "name": "patient_cases", "target": "patient_case", "type": "one_to_many", "back_populates": "patient" },
+        { "name": "documents", "target": "document", "type": "one_to_many", "back_populates": "patient" }
       ]
     },
     {
@@ -65,24 +45,9 @@
         { "name": "amount_paid", "type": "DECIMAL", "precision": 10, "scale": 2, "nullable": true }
       ],
       "relationships": [
-        {
-          "name": "patient",
-          "target": "patient",
-          "type": "many_to_one",
-          "back_populates": "patient_cases"
-        },
-        {
-          "name": "appointments",
-          "target": "appointment",
-          "type": "one_to_many",
-          "back_populates": "patient_case"
-        },
-        {
-          "name": "documents",
-          "target": "document",
-          "type": "one_to_many",
-          "back_populates": "patient_case"
-        }
+        { "name": "patient", "target": "patient", "type": "many_to_one", "back_populates": "patient_cases" },
+        { "name": "appointments", "target": "appointment", "type": "one_to_many", "back_populates": "patient_case" },
+        { "name": "documents", "target": "document", "type": "one_to_many", "back_populates": "patient_case" }
       ]
     },
     {
@@ -97,36 +62,11 @@
         { "name": "appointment_statusid", "type": "Integer", "foreign_key": "appointment_status.id" }
       ],
       "relationships": [
-        {
-          "name": "patient_case",
-          "target": "patient_case",
-          "type": "many_to_one",
-          "back_populates": "appointments"
-        },
-        {
-          "name": "department_responsibility",
-          "target": "department_responsibility",
-          "type": "many_to_one",
-          "back_populates": "appointments"
-        },
-        {
-          "name": "appointment_status",
-          "target": "appointment_status",
-          "type": "many_to_one",
-          "back_populates": "appointments"
-        },
-        {
-          "name": "documents",
-          "target": "document",
-          "type": "one_to_many",
-          "back_populates": "appointment"
-        },
-        {
-          "name": "appointment_histories",
-          "target": "status_history",
-          "type": "one_to_many",
-          "back_populates": "appointment"
-        }
+        { "name": "patient_case", "target": "patient_case", "type": "many_to_one", "back_populates": "appointments" },
+        { "name": "department_responsibility", "target": "department_responsibility", "type": "many_to_one", "back_populates": "appointments" },
+        { "name": "appointment_status", "target": "appointment_status", "type": "many_to_one", "back_populates": "appointments" },
+        { "name": "documents", "target": "document", "type": "one_to_many", "back_populates": "appointment" },
+        { "name": "appointment_histories", "target": "status_history", "type": "one_to_many", "back_populates": "appointment" }
       ]
     },
     {
@@ -136,18 +76,21 @@
         { "name": "status_name", "type": "String", "length": 64, "unique": true }
       ],
       "relationships": [
-        {
-          "name": "appointments",
-          "target": "appointment",
-          "type": "one_to_many",
-          "back_populates": "appointment_status"
-        },
-        {
-          "name": "appointment_histories",
-          "target": "status_history",
-          "type": "one_to_many",
-          "back_populates": "appointment_status"
-        }
+        { "name": "appointments", "target": "appointment", "type": "one_to_many", "back_populates": "appointment_status" },
+        { "name": "appointment_histories", "target": "status_history", "type": "one_to_many", "back_populates": "appointment_status" }
+      ]
+    },
+    {
+      "name": "status_history",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "appointmentid", "type": "Integer", "foreign_key": "appointment.id" },
+        { "name": "appointment_statusid", "type": "Integer", "foreign_key": "appointment_status.id" },
+        { "name": "status_time", "type": "DateTime" }
+      ],
+      "relationships": [
+        { "name": "appointment", "target": "appointment", "type": "many_to_one", "back_populates": "appointment_histories" },
+        { "name": "appointment_status", "target": "appointment_status", "type": "many_to_one", "back_populates": "appointment_histories" }
       ]
     },
     {
@@ -157,12 +100,7 @@
         { "name": "type_name", "type": "String", "length": 64, "unique": true }
       ],
       "relationships": [
-        {
-          "name": "documents",
-          "target": "document",
-          "type": "one_to_many",
-          "back_populates": "document_type"
-        }
+        { "name": "documents", "target": "document", "type": "one_to_many", "back_populates": "document_type" }
       ]
     },
     {
@@ -181,36 +119,11 @@
         { "name": "document_typeid", "type": "Integer", "foreign_key": "document_type.id", "nullable": true }
       ],
       "relationships": [
-        {
-          "name": "patient",
-          "target": "patient",
-          "type": "many_to_one",
-          "back_populates": "documents"
-        },
-        {
-          "name": "patient_case",
-          "target": "patient_case",
-          "type": "many_to_one",
-          "back_populates": "documents"
-        },
-        {
-          "name": "department_responsibility",
-          "target": "department_responsibility",
-          "type": "many_to_one",
-          "back_populates": "documents"
-        },
-        {
-          "name": "appointment",
-          "target": "appointment",
-          "type": "many_to_one",
-          "back_populates": "documents"
-        },
-        {
-          "name": "document_type",
-          "target": "document_type",
-          "type": "many_to_one",
-          "back_populates": "documents"
-        }
+        { "name": "patient", "target": "patient", "type": "many_to_one", "back_populates": "documents" },
+        { "name": "patient_case", "target": "patient_case", "type": "many_to_one", "back_populates": "documents" },
+        { "name": "department_responsibility", "target": "department_responsibility", "type": "many_to_one", "back_populates": "documents" },
+        { "name": "appointment", "target": "appointment", "type": "many_to_one", "back_populates": "documents" },
+        { "name": "document_type", "target": "document_type", "type": "many_to_one", "back_populates": "documents" }
       ]
     }
   ]
