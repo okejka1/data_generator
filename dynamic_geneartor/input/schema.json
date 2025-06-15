@@ -1,4 +1,8 @@
 {
+  "constants": {
+    "appointmentStatus": ["TO DO", "IN PROGRESS", "DONE", "CANCELLED"],
+    "genders": ["male", "female", "non_binary"]
+  },
   "tables": [
     {
       "name": "patient",

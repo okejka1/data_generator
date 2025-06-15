@@ -1,0 +1,54 @@
+{
+  "tables": [
+    {
+      "name": "book",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "title", "type": "String", "length": 255 },
+        { "name": "isbn", "type": "String", "length": 13, "unique": true },
+        { "name": "published_year", "type": "Integer" },
+        { "name": "authorid", "type": "Integer", "foreign_key": "author.id" },
+        { "name": "available_copies", "type": "Integer" }
+      ],
+      "relationships": [
+        { "name": "author", "target": "author", "type": "many_to_one", "back_populates": "books" },
+        { "name": "loans", "target": "loan", "type": "one_to_many", "back_populates": "book" }
+      ]
+    },
+    {
+      "name": "author",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "name", "type": "String", "length": 128 }
+      ],
+      "relationships": [
+        { "name": "books", "target": "book", "type": "one_to_many", "back_populates": "author" }
+      ]
+    },
+    {
+      "name": "member",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "full_name", "type": "String", "length": 128 },
+        { "name": "email", "type": "String", "length": 64, "unique": true }
+      ],
+      "relationships": [
+        { "name": "loans", "target": "loan", "type": "one_to_many", "back_populates": "member" }
+      ]
+    },
+    {
+      "name": "loan",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "bookid", "type": "Integer", "foreign_key": "book.id" },
+        { "name": "memberid", "type": "Integer", "foreign_key": "member.id" },
+        { "name": "loan_date", "type": "Date" },
+        { "name": "return_date", "type": "Date", "nullable": true }
+      ],
+      "relationships": [
+        { "name": "book", "target": "book", "type": "many_to_one", "back_populates": "loans" },
+        { "name": "member", "target": "member", "type": "many_to_one", "back_populates": "loans" }
+      ]
+    }
+  ]
+}

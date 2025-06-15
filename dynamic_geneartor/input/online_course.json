@@ -1,0 +1,53 @@
+{
+  "tables": [
+    {
+      "name": "course",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "title", "type": "String", "length": 255 },
+        { "name": "description", "type": "String", "length": 1000 },
+        { "name": "instructorid", "type": "Integer", "foreign_key": "instructor.id" }
+      ],
+      "relationships": [
+        { "name": "instructor", "target": "instructor", "type": "many_to_one", "back_populates": "courses" },
+        { "name": "enrollments", "target": "enrollment", "type": "one_to_many", "back_populates": "course" }
+      ]
+    },
+    {
+      "name": "instructor",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "name", "type": "String", "length": 128 },
+        { "name": "bio", "type": "String", "length": 1000, "nullable": true }
+      ],
+      "relationships": [
+        { "name": "courses", "target": "course", "type": "one_to_many", "back_populates": "instructor" }
+      ]
+    },
+    {
+      "name": "student",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "full_name", "type": "String", "length": 128 },
+        { "name": "email", "type": "String", "length": 64, "unique": true }
+      ],
+      "relationships": [
+        { "name": "enrollments", "target": "enrollment", "type": "one_to_many", "back_populates": "student" }
+      ]
+    },
+    {
+      "name": "enrollment",
+      "columns": [
+        { "name": "id", "type": "Integer", "primary_key": true },
+        { "name": "studentid", "type": "Integer", "foreign_key": "student.id" },
+        { "name": "courseid", "type": "Integer", "foreign_key": "course.id" },
+        { "name": "enrolled_on", "type": "Date" },
+        { "name": "completed", "type": "Boolean" }
+      ],
+      "relationships": [
+        { "name": "student", "target": "student", "type": "many_to_one", "back_populates": "enrollments" },
+        { "name": "course", "target": "course", "type": "many_to_one", "back_populates": "enrollments" }
+      ]
+    }
+  ]
+}
