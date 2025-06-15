@@ -2,7 +2,7 @@ import json
 
 def render_column(col):
     if col['type'] == "DECIMAL":
-        precision = col.get("precision", 10)   # default to (10, 2) if not provided
+        precision = col.get("precision", 10)
         scale = col.get("scale", 2)
         line = f"{col['name']} = Column(DECIMAL({precision}, {scale})"
     else:

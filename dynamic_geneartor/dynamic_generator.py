@@ -7,10 +7,9 @@ import random
 from loaded_schema.models_generated import *
 
 from config import *
-from static_generator.models import AppointmentHistory
 
 fake = get_faker()
-engine  = get_engine(sys.argv[1], quote_plus(sys.argv[2]), "test")
+engine = get_engine(sys.argv[1], quote_plus(sys.argv[2]), "test2")
 session = get_session(engine)
 
 # Dictionary to track generated records for foreign key relationships
@@ -20,6 +19,7 @@ schema_path = 'input/full_schema.json'
 with open(schema_path) as f:
     full_schema = json.load(f)
 constants = full_schema.get("constants", {})
+
 
 def choose_constant(table, column_name):
     for col in full_schema['tables']:
@@ -31,12 +31,8 @@ def choose_constant(table, column_name):
 
 
 def generate_table_data(table, num_records: int):
-    """Generic function to generate data for a single table with support for foreign keys."""
     inspector = inspect(table)
-
-    # Reflect columns, considering if there's a foreign key or a specific data type
     columns = inspector.columns.keys()
-
     data = []
     for _ in range(num_records):
         row = {}
@@ -47,18 +43,15 @@ def generate_table_data(table, num_records: int):
         for column_name in columns:
             column = inspector.columns[column_name]
 
-            if column.primary_key:  # Skip primary keys (assume auto-increment)
+            if column.primary_key:
                 continue
 
-            if column.foreign_keys:  # Handle foreign keys
-                fk = list(column.foreign_keys)[0]  # Get foreign key reference
+            if column.foreign_keys:
+                fk = list(column.foreign_keys)[0]
                 referenced_table_name = fk.column.table.name
-
-                # Lookup existing foreign key data
                 if referenced_table_name in foreign_key_data and foreign_key_data[referenced_table_name]:
                     row[column_name] = random.choice(foreign_key_data[referenced_table_name])
                 else:
-                    # If referenced data is empty, raise an error
                     raise ValueError(
                         f"No records found for foreign key table `{referenced_table_name}`. Please generate data for it first.")
 
@@ -68,24 +61,26 @@ def generate_table_data(table, num_records: int):
                 const_choices = choose_constant(table, column_name)
                 if const_choices:
                     row[column_name] = random.choice(const_choices)
-                elif(column_name == "first_name"):
+                elif (column_name == ("employee_full_name")):
+                    row[column_name] = fake.name()
+                elif (column_name == "first_name"):
                     row[column_name] = fake.first_name_male() if gender == 'male' else fake.first_name_female()
-                elif(column_name == "last_name"):
+                elif (column_name == "last_name"):
                     row[column_name] = fake.last_name()
-                elif(column_name == "email_address"):
+                elif (column_name == "email_address"):
                     row[column_name] = fake.email()
-                elif(column_name == "phone_number"):
+                elif (column_name == "phone_number"):
                     row[column_name] = fake.phone_number()
-                elif(column_name == "address"):
+                elif (column_name == "address"):
                     row[column_name] = fake.address().replace('\n', ', ')
-                elif(column_name == "pesel"):
+                elif (column_name == "pesel"):
                     row[column_name] = pesel
-                elif(column_name == "gender"):
+                elif (column_name == "gender"):
                     row[column_name] = gender
                 else:
                     row[column_name] = fake.word()[:column.type.length]
             elif isinstance(column.type, Date):
-                if(column_name == "date_of_birth"):
+                if (column_name == "date_of_birth"):
                     row[column_name] = date_birth
                 else:
                     row[column_name] = fake.date_of_birth()
@@ -99,11 +94,9 @@ def generate_table_data(table, num_records: int):
                 row[column_name] = None
         data.append(row)
 
-    # Save generated records into the database
     session.add_all([table(**entry) for entry in data])
     session.commit()
 
-    # Store the generated primary keys for foreign key relationship handling
     if hasattr(table, '__tablename__'):
         stored_primary_keys = [getattr(item, 'id') for item in session.query(table).all()]
         foreign_key_data[table.__tablename__] = stored_primary_keys
@@ -112,25 +105,27 @@ def generate_table_data(table, num_records: int):
     return data
 
 
-# Example: Generate data for all tables while handling relationships
 def generate_data():
-
-    # Generate tables in the correct dependency order
-    # Note: Order matters due to foreign key dependencies!
-    generate_table_data(Patient, 10)  # Generate Patients first (no dependencies)
+    generate_table_data(Patient, 10)
     generate_table_data(DepartmentResponsibility, 10)
-    generate_table_data(PatientCase, 20)  # Generate Patient Cases (relies on Patient IDs)
+    generate_table_data(PatientCase, 20)
     generate_table_data(AppointmentStatus, 3)
     generate_table_data(DocumentType, 3)
-
-    generate_table_data(Appointment, 30)  # Generate Appointments (relies on PatientCase IDs)
-    generate_table_data(AppointmentHistory, 30)
+    generate_table_data(Appointment, 30)
+    generate_table_data(StatusHistory, 30)
     generate_table_data(Document, 30)
-#
 
+
+#     generate_table_data(Author,10)
+#     generate_table_data(Book,10)
+#     generate_table_data(Member,10)
+#     generate_table_data(Loan,10)
+
+#     generate_table_data(Student, 10)
+#     generate_table_data(Instructor, 10)
+#     generate_table_data(Course, 10)
+#     generate_table_data(Enrollment, 10)
 if __name__ == "__main__":
     Base.metadata.drop_all(session.bind)
-    Base.metadata.create_all(session.bind)  # Ensure tables exist
+    Base.metadata.create_all(session.bind)
     generate_data()
-
-
